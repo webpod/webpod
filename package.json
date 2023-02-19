@@ -1,0 +1,21 @@
+{
+  "name": "webpod",
+  "version": "0.0.1",
+  "description": "Self-hosted sites",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "self-hosted"
+  ],
+  "author": "Anton Medvedev <anton@medv.io>",
+  "license": "MIT",
+  "homepage": "https://webpod.dev",
+  "repository": "webpod/webpod",
+  "devDependencies": {
+    "typescript": "^4.9.5",
+    "@types/node": "^18.14.0"
+  }
+}
