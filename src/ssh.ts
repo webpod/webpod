@@ -12,6 +12,7 @@ export type Options = {
   port?: number | string
   forwardAgent?: boolean
   shell?: string
+  prefix?: string
   options?: (SshOption | `${SshOption}=${string}`)[]
 }
 
@@ -42,7 +43,7 @@ export function ssh(host: string, options: Options = {}): RemoteShell {
       ...(options.port ? ['-p', `${options.port}`] : []),
       ...(options.forwardAgent ? ['-A'] : []),
       ...(options.options || []).flatMap(x => ['-o', x]),
-      `: ${shellID}; ` + (options.shell || 'bash -ls')
+      `: ${shellID}; ${options.prefix || 'set -euo pipefail;'} ` + (options.shell || 'bash -ls')
     ]
     if (process.env.WEBPOD_DEBUG) {
       console.log('ssh', args.join(' '))
