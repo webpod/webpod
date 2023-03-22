@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process'
 import process from 'node:process'
-import { controlPath, escapeshellarg } from './utils.js'
+import { composeCmd, controlPath, escapeshellarg } from './utils.js'
 
 export type RemoteShell = (
   (pieces: TemplateStringsArray, ...values: any[]) => Promise<Result>
@@ -8,98 +8,108 @@ export type RemoteShell = (
   exit: () => void
 }
 
-export type Options = {
+export type Config = {
   port?: number | string
   forwardAgent?: boolean
   shell?: string
   prefix?: string
-  options?: (SshOption | `${SshOption}=${string}`)[]
+  options?: SshOptions
 }
 
-export function ssh(host: string, options: Options = {}): RemoteShell {
+export function ssh(host: string, config: Config = {}): RemoteShell {
   const $: RemoteShell = function (pieces, ...values) {
     const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     if (pieces.some(p => p == undefined)) {
       throw new Error(`Malformed command at ${source}`)
     }
-    let cmd = pieces[0], i = 0
-    while (i < values.length) {
-      let s
-      if (Array.isArray(values[i])) {
-        s = values[i].map((x: any) => escapeshellarg(x)).join(' ')
-      } else {
-        s = escapeshellarg(values[i])
-      }
-      cmd += s + pieces[++i]
-    }
     let resolve: (out: Result) => void, reject: (out: Result) => void
     const promise = new Promise<Result>((...args) => ([resolve, reject] = args))
-    const shellID = 'id$' + Math.random().toString(36).slice(2)
+    const cmd = composeCmd(pieces, values)
+    const shellId = 'id$' + Math.random().toString(36).slice(2)
+    let options: SshOptions = {
+      ControlMaster: 'auto',
+      ControlPath: controlPath(host),
+      ControlPersist: '5m',
+      ConnectTimeout: '5s',
+      ForwardAgent: 'yes',
+      StrictHostKeyChecking: 'accept-new',
+    }
+    if (config.port != undefined) {
+      options.Port = config.port.toString()
+    }
+    if (config.forwardAgent != undefined) {
+      options.ForwardAgent = config.forwardAgent ? 'yes' : 'no'
+    }
+    options = {...options, ...config.options}
     const args: string[] = [
       host,
-      '-o', 'ControlMaster=auto',
-      '-o', 'ControlPath=' + controlPath(host),
-      '-o', 'ControlPersist=5m',
-      ...(options.port ? ['-p', `${options.port}`] : []),
-      ...(options.forwardAgent ? ['-A'] : []),
-      ...(options.options || []).flatMap(x => ['-o', x]),
-      `: ${shellID}; ${options.prefix || 'set -euo pipefail;'} ` + (options.shell || 'bash -ls')
+      ...Object.entries(options).flatMap(
+        ([key, value]) => ['-o', `${key}=${value}`]
+      ),
+      `: ${shellId}; ${config.shell || 'bash -ls'}`
     ]
+    let input = config.prefix || 'set -euo pipefail; '
+    input += cmd
     if (process.env.WEBPOD_DEBUG) {
-      console.log('ssh', args.join(' '))
+      console.error(
+        'ssh',
+        args.map(escapeshellarg).join(' '),
+        '<<<',
+        escapeshellarg(input),
+      )
     }
     const child = spawn('ssh', args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     })
     let stdout = '', stderr = '', combined = ''
-    const onStdout = (data: any) => {
+    child.stdout.on('data', data => {
       stdout += data
       combined += data
-    }
-    const onStderr = (data: any) => {
+    })
+    child.stderr.on('data', data => {
       stderr += data
       combined += data
-    }
-    child.stdout.on('data', onStdout)
-    child.stderr.on('data', onStderr)
+    })
     child.on('close', (code) => {
-      if (code === 0) {
-        resolve(new Result(source, code, stdout, stderr, combined))
-      } else {
-        reject(new Result(source, code, stdout, stderr, combined))
-      }
+      (code === 0 ? resolve : reject)(
+        new Result(source, shellId, code, stdout, stderr, combined)
+      )
     })
     child.on('error', err => {
-      reject(new Result(source, null, stdout, stderr, combined, err))
+      reject(
+        new Result(source, shellId, null, stdout, stderr, combined, err)
+      )
     })
-
-    child.stdin.write(cmd)
+    child.stdin.write(input)
     child.stdin.end()
     return promise
   }
-  $.exit = () => spawnSync('ssh', [host, '-O', 'exit', '-o', `ControlPath=${controlPath(host)}`])
+  $.exit = () => spawnSync('ssh', [
+    host,
+    '-O', 'exit',
+    '-o', `ControlPath=${controlPath(host)}`
+  ])
   return $
 }
 
-export class Result extends String {
-  readonly source: string
-  readonly stdout: string
-  readonly stderr: string
-  readonly exitCode: number | null
-  readonly error?: Error
-
-  constructor(source: string, exitCode: number | null, stdout: string, stderr: string, combined: string, error?: Error) {
-    super(combined)
-    this.source = source
-    this.stdout = stdout
-    this.stderr = stderr
-    this.exitCode = exitCode
-    this.error = error
+export class Result extends Error {
+  constructor(
+    public readonly source: string,
+    public readonly shellId: string,
+    public readonly exitCode: number | null,
+    public readonly stdout: string,
+    public readonly stderr: string,
+    public readonly combined: string,
+    public readonly error?: Error
+  ) {
+    super(combined + (error?.message || ''))
   }
 }
 
-export type SshOption =
+type SshOptions = { [key in AvailableOptions]?: string }
+
+type AvailableOptions =
   'AddKeysToAgent' |
   'AddressFamily' |
   'BatchMode' |

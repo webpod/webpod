@@ -1,0 +1,24 @@
+services:
+  webpod:
+    build:
+      context: .
+      target: webpod
+    depends_on:
+      - remote-host
+    volumes:
+      - ../:/webpod
+    command: "npm run uvu"
+    networks:
+      - default
+
+  remote-host:
+    build:
+      context: .
+      target: remote-host
+    networks:
+      default:
+        aliases:
+          - example.com
+
+networks:
+  default:

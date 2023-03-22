@@ -9,17 +9,21 @@
     "webpod": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "cd test && docker compose up --exit-code-from=webpod",
+    "uvu": "uvu -i .ts"
   },
-  "keywords": [
-    "self-hosted"
-  ],
+  "devDependencies": {
+    "@types/node": "^18.14.0",
+    "esbuild": "0.17.12",
+    "typescript": "^4.9.5",
+    "uvu": "^0.5.6"
+  },
   "author": "Anton Medvedev <anton@medv.io>",
   "license": "MIT",
   "homepage": "https://webpod.dev",
   "repository": "webpod/webpod",
-  "devDependencies": {
-    "typescript": "^4.9.5",
-    "@types/node": "^18.14.0"
-  }
+  "keywords": [
+    "self-hosted"
+  ]
 }
