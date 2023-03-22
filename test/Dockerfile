@@ -1,11 +1,10 @@
 ARG node=18
 FROM node:${node}-alpine AS webpod
 RUN apk add \
-    git \
     openssh-client
-RUN ssh-keygen -q -t ed25519 -C "test@webpod.dev" -f /root/.ssh/id_rsa
-RUN git config --global user.email "test@webpod.dev"; \
-    git config --global user.name "webpod"
+RUN adduser -D -u 1001 webpod
+USER webpod
+RUN ssh-keygen -q -t ed25519 -C "hi@webpod.dev" -f /home/webpod/.ssh/id_rsa
 VOLUME /webpod
 WORKDIR /webpod
 
@@ -15,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     sudo
 RUN mkdir /run/sshd
-RUN useradd -r -u 1001 -g root webpod
-COPY --from=webpod /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+COPY --from=webpod /home/webpod/.ssh/id_rsa.pub /root/.ssh/authorized_keys
+RUN chown root:root /root/.ssh/authorized_keys
 EXPOSE 22 80
 CMD ["/usr/sbin/sshd", "-D"]
