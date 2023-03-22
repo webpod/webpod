@@ -10,4 +10,10 @@ test('echo', async () => {
   assert.equal(stdout, 'hello, world\n')
 })
 
+test('pipefail', async () => {
+  const $ = ssh('root@example.com')
+  const {exitCode} = await $.with({nothrow: true})`fail | cat`
+  assert.is(exitCode, 127)
+})
+
 test.run()

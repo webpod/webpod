@@ -6,6 +6,7 @@ export type RemoteShell = (
   (pieces: TemplateStringsArray, ...values: any[]) => Promise<Result>
   ) & {
   exit: () => void
+  with: (override: Config) => RemoteShell
 }
 
 export type Config = {
@@ -13,6 +14,7 @@ export type Config = {
   forwardAgent?: boolean
   shell?: string
   prefix?: string
+  nothrow?: boolean
   options?: SshOptions
 }
 
@@ -46,9 +48,9 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       ...Object.entries(options).flatMap(
         ([key, value]) => ['-o', `${key}=${value}`]
       ),
-      `: ${shellId}; ${config.shell || 'bash -ls'}`
+      `: ${shellId}; ${config.shell ?? 'bash -ls'}`
     ]
-    let input = config.prefix || 'set -euo pipefail; '
+    let input = config.prefix ?? 'set -euo pipefail; '
     input += cmd
     if (process.env.WEBPOD_DEBUG) {
       console.error(
@@ -72,7 +74,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       combined += data
     })
     child.on('close', (code) => {
-      (code === 0 ? resolve : reject)(
+      (code === 0 || config.nothrow ? resolve : reject)(
         new Result(source, shellId, code, stdout, stderr, combined)
       )
     })
@@ -90,6 +92,16 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     '-O', 'exit',
     '-o', `ControlPath=${controlPath(host)}`
   ])
+  $.with = override => {
+    return ssh(host, {
+      ...config,
+      ...override,
+      options: {
+        ...config.options,
+        ...override.options,
+      }
+    })
+  }
   return $
 }
 
