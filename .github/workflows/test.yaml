@@ -15,4 +15,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm i
       - run: npm run build
+      - name: Build docker
+        run: cd test && docker compose build
       - run: npm test
