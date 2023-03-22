@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     openssh-server \
     sudo
 RUN mkdir /run/sshd
+RUN useradd -r -u 1001 -g root webpod
 COPY --from=webpod /root/.ssh/id_rsa.pub /root/.ssh/authorized_keys
 EXPOSE 22 80
 CMD ["/usr/sbin/sshd", "-D"]
