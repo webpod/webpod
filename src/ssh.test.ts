@@ -12,7 +12,7 @@ test('echo', async () => {
 
 test('pipefail', async () => {
   const $ = ssh('root@example.com')
-  const {exitCode} = await $.with({nothrow: true})`fail | cat`
+  const {exitCode} = await $({nothrow: true})`fail | cat`
   assert.is(exitCode, 127)
 })
 

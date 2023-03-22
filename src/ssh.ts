@@ -2,11 +2,10 @@ import { spawn, spawnSync } from 'node:child_process'
 import process from 'node:process'
 import { composeCmd, controlPath, escapeshellarg } from './utils.js'
 
-export type RemoteShell = (
-  (pieces: TemplateStringsArray, ...values: any[]) => Promise<Result>
-  ) & {
+export type RemoteShell = {
+  (config: Config): RemoteShell
+  (pieces: TemplateStringsArray, ...values: any[]): Promise<Result>
   exit: () => void
-  with: (override: Config) => RemoteShell
 }
 
 export type Config = {
@@ -19,7 +18,15 @@ export type Config = {
 }
 
 export function ssh(host: string, config: Config = {}): RemoteShell {
-  const $: RemoteShell = function (pieces, ...values) {
+  const $ = function (piecesOrConfig, ...values) {
+    if (!Array.isArray(piecesOrConfig)) {
+      const override: Config = piecesOrConfig as Config
+      return ssh(host, {
+        ...config, ...override,
+        options: {...config.options, ...override.options},
+      })
+    }
+    const pieces = piecesOrConfig as TemplateStringsArray
     const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     if (pieces.some(p => p == undefined)) {
       throw new Error(`Malformed command at ${source}`)
@@ -86,22 +93,12 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     child.stdin.write(input)
     child.stdin.end()
     return promise
-  }
+  } as RemoteShell
   $.exit = () => spawnSync('ssh', [
     host,
     '-O', 'exit',
     '-o', `ControlPath=${controlPath(host)}`
   ])
-  $.with = override => {
-    return ssh(host, {
-      ...config,
-      ...override,
-      options: {
-        ...config.options,
-        ...override.options,
-      }
-    })
-  }
   return $
 }
 
