@@ -1,5 +1,5 @@
-ARG node-version=18
-FROM node:${node-version}-alpine AS webpod
+ARG node=18
+FROM node:${node}-alpine AS webpod
 RUN apk add \
     git \
     openssh-client
