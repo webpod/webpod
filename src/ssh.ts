@@ -6,6 +6,7 @@ export type RemoteShell = {
   (config: Config): RemoteShell
   (pieces: TemplateStringsArray, ...values: any[]): Promise<Result>
   exit: () => void
+  check: () => boolean
 }
 
 export type Config = {
@@ -94,11 +95,14 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     child.stdin.end()
     return promise
   } as RemoteShell
-  $.exit = () => spawnSync('ssh', [
-    host,
+  $.exit = () => spawnSync('ssh', [host,
+    '-o', `ControlPath=${controlPath(host)}`,
     '-O', 'exit',
-    '-o', `ControlPath=${controlPath(host)}`
   ])
+  $.check = () => spawnSync('ssh', [host,
+    '-o', `ControlPath=${controlPath(host)}`,
+    '-O', 'check',
+  ]).status == 0
   return $
 }
 

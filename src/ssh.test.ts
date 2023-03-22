@@ -16,4 +16,12 @@ test('pipefail', async () => {
   assert.is(exitCode, 127)
 })
 
+test('multiplexing', async () => {
+  const $ = ssh('root@example.com')
+  await $`:`
+  assert.ok($.check())
+  $.exit()
+  assert.not.ok($.check())
+})
+
 test.run()
