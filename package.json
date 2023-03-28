@@ -1,12 +1,11 @@
 {
   "name": "webpod",
   "version": "0.0.2",
-  "description": "Self-hosted sites",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "webpod": "dist/index.js"
+    "webpod": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -22,6 +21,7 @@
   "author": "Anton Medvedev <anton@medv.io>",
   "license": "MIT",
   "homepage": "https://webpod.dev",
+  "description": "Self-hosted sites",
   "repository": "webpod/webpod",
   "keywords": [
     "self-hosted"

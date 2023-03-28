@@ -35,7 +35,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     let resolve: (out: Result) => void, reject: (out: Result) => void
     const promise = new Promise<Result>((...args) => ([resolve, reject] = args))
     const cmd = composeCmd(pieces, values)
-    const shellId = 'id$' + Math.random().toString(36).slice(2)
+    const id = 'id$' + Math.random().toString(36).slice(2)
     let options: SshOptions = {
       ControlMaster: 'auto',
       ControlPath: controlPath(host),
@@ -56,7 +56,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       ...Object.entries(options).flatMap(
         ([key, value]) => ['-o', `${key}=${value}`]
       ),
-      `: ${shellId}; ${config.shell ?? 'bash -ls'}`
+      `: ${id}; ${config.shell ?? 'bash -ls'}`
     ]
     let input = config.prefix ?? 'set -euo pipefail; '
     input += cmd
@@ -82,14 +82,13 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       combined += data
     })
     child.on('close', (code) => {
-      (code === 0 || config.nothrow ? resolve : reject)(
-        new Result(source, shellId, code, stdout, stderr, combined)
-      )
+      if (code === 0 || config.nothrow)
+        resolve(new Result(source, code, stdout, stderr, combined))
+      else
+        reject(new Result(source, code, stdout, stderr, combined))
     })
     child.on('error', err => {
-      reject(
-        new Result(source, shellId, null, stdout, stderr, combined, err)
-      )
+      reject(new Result(source, null, stdout, stderr, combined, err))
     })
     child.stdin.write(input)
     child.stdin.end()
@@ -109,7 +108,6 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
 export class Result extends Error {
   constructor(
     public readonly source: string,
-    public readonly shellId: string,
     public readonly exitCode: number | null,
     public readonly stdout: string,
     public readonly stderr: string,
