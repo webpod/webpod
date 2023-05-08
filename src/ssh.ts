@@ -15,6 +15,7 @@ export type Config = {
   shell?: string
   prefix?: string
   nothrow?: boolean
+  multiplexing?: boolean
   options?: SshOptions
 }
 
@@ -27,6 +28,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
         options: {...config.options, ...override.options},
       })
     }
+    const debug = process.env['WEBPOD_DEBUG'] ?? ''
     const pieces = piecesOrConfig as TemplateStringsArray
     const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     if (pieces.some(p => p == undefined)) {
@@ -50,6 +52,11 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     if (config.forwardAgent != undefined) {
       options.ForwardAgent = config.forwardAgent ? 'yes' : 'no'
     }
+    if (config.multiplexing === false) {
+      options.ControlMaster = 'no'
+      options.ControlPath = 'none'
+      options.ControlPersist = 'no'
+    }
     options = {...options, ...config.options}
     const args: string[] = [
       host,
@@ -60,7 +67,8 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     ]
     let input = config.prefix ?? 'set -euo pipefail; '
     input += cmd
-    if (process.env.WEBPOD_DEBUG) {
+    if (debug !== '') {
+      if (debug.includes('ssh')) args.unshift('-vvv')
       console.error(
         'ssh',
         args.map(escapeshellarg).join(' '),
@@ -78,6 +86,10 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       combined += data
     })
     child.stderr.on('data', data => {
+      if (debug.includes('ssh') && /^debug\d:/.test(data)) {
+        process.stderr.write(data)
+        return
+      }
       stderr += data
       combined += data
     })
@@ -107,6 +119,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
 
 export class Response {
   readonly #combined: string
+
   constructor(
     public readonly source: string,
     public readonly exitCode: number | null,
