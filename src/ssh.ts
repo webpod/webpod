@@ -4,7 +4,7 @@ import { composeCmd, controlPath, escapeshellarg } from './utils.js'
 
 export type RemoteShell = {
   (config: Config): RemoteShell
-  (pieces: TemplateStringsArray, ...values: any[]): Promise<Result>
+  (pieces: TemplateStringsArray, ...values: any[]): Promise<Response>
   exit: () => void
   check: () => boolean
 }
@@ -32,8 +32,8 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     if (pieces.some(p => p == undefined)) {
       throw new Error(`Malformed command at ${source}`)
     }
-    let resolve: (out: Result) => void, reject: (out: Result) => void
-    const promise = new Promise<Result>((...args) => ([resolve, reject] = args))
+    let resolve: (out: Response) => void, reject: (out: Response) => void
+    const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
     const cmd = composeCmd(pieces, values)
     const id = 'id$' + Math.random().toString(36).slice(2)
     let options: SshOptions = {
@@ -83,12 +83,12 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     })
     child.on('close', (code) => {
       if (code === 0 || config.nothrow)
-        resolve(new Result(source, code, stdout, stderr, combined))
+        resolve(new Response(source, code, stdout, stderr, combined))
       else
-        reject(new Result(source, code, stdout, stderr, combined))
+        reject(new Response(source, code, stdout, stderr, combined))
     })
     child.on('error', err => {
-      reject(new Result(source, null, stdout, stderr, combined, err))
+      reject(new Response(source, null, stdout, stderr, combined, err))
     })
     child.stdin.write(input)
     child.stdin.end()
@@ -105,16 +105,21 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
   return $
 }
 
-export class Result extends Error {
+export class Response {
+  readonly #combined: string
   constructor(
     public readonly source: string,
     public readonly exitCode: number | null,
     public readonly stdout: string,
     public readonly stderr: string,
-    public readonly combined: string,
+    combined: string,
     public readonly error?: Error
   ) {
-    super(combined + (error?.message || ''))
+    this.#combined = combined
+  }
+
+  toString() {
+    return this.#combined
   }
 }
 
