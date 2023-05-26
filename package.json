@@ -13,9 +13,9 @@
     "uvu": "uvu -i .ts"
   },
   "devDependencies": {
-    "@types/node": "^18.14.0",
-    "esbuild": "0.17.12",
-    "typescript": "^4.9.5",
+    "@types/node": "^20.2.4",
+    "esbuild": "0.17.19",
+    "typescript": "^5.0.4",
     "uvu": "^0.5.6"
   },
   "author": "Anton Medvedev <anton@medv.io>",
