@@ -1,11 +1,15 @@
-import {RemoteShell, ssh} from "./ssh.js";
+import {RemoteShell, Response, ssh} from "./ssh.js";
+
+export type KV = { [key: string]: string }
+export type Value = number | boolean | string | string[] | KV
 
 export type Config = {
-  [key: string]: any
+  [key: string]: Value
   hostname: string
+  remoteUser: string
   keepReleases: number
   defaultTimeout: string
-  env: { [key: string]: string }
+  env: KV
   deployPath: string
   currentPath: string
   useRelativeSymlink: boolean
@@ -13,10 +17,12 @@ export type Config = {
   symlinkArgs: string[]
 }
 
-export const defaultConfig: Partial<Config> = {}
+export const defaultConfig: {
+  [key in keyof Partial<Config>]: Callback<Value | Response>
+} = {}
 
-export function define<T extends string>(config: keyof Config, value: Callback<T>) {
-  defaultConfig[config] = value
+export type Host = {
+  [key in keyof Config]: Promise<Value>
 }
 
 export type Callback<T> = (context: Context) => Promise<T>
@@ -26,12 +32,21 @@ export type Context = {
   $: RemoteShell
 }
 
-export type Host = {
-  [key in keyof Config]: Promise<Config[key]>
+export function define<T extends Value | Response>(config: keyof Config, value: Callback<T>) {
+  defaultConfig[config] = value
 }
 
-export function host(config: Partial<Config>) {
-  const $ = ssh(config.hostname || 'localhost')
+export function createHost(hostname: string) {
+  const config = {} as Config
+  if (hostname.includes('@')) {
+    const [user, name] = hostname.split('@')
+    config.hostname = name
+    config.remoteUser = user
+  } else {
+    config.hostname = hostname
+  }
+
+  const $ = ssh((config.remoteUser ? config.remoteUser + '@' : '') + config.hostname || 'localhost')
   const host = new Proxy(config, {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
@@ -43,6 +58,9 @@ export function host(config: Partial<Config>) {
       }
       if (typeof value === 'function') {
         value = await value({host, $})
+        if (value instanceof Response) {
+          value = value.stdout.trim()
+        }
         host[prop.toString()] = value
       }
       return value
