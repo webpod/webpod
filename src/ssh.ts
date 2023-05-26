@@ -1,10 +1,10 @@
-import { spawn, spawnSync } from 'node:child_process'
+import {spawn, spawnSync} from 'node:child_process'
 import process from 'node:process'
-import { composeCmd, controlPath, escapeshellarg } from './utils.js'
+import {composeCmd, controlPath, escapeshellarg, Values} from './utils.js'
 
 export type RemoteShell = {
   (config: Config): RemoteShell
-  (pieces: TemplateStringsArray, ...values: any[]): Promise<Response>
+  (pieces: TemplateStringsArray, ...values: Values): Promise<Response>
   exit: () => void
   check: () => boolean
 }
@@ -20,7 +20,7 @@ export type Config = {
 }
 
 export function ssh(host: string, config: Config = {}): RemoteShell {
-  const $ = function (piecesOrConfig, ...values) {
+  const $ = async function (piecesOrConfig, ...values: Values) {
     if (!Array.isArray(piecesOrConfig)) {
       const override: Config = piecesOrConfig as Config
       return ssh(host, {
@@ -36,7 +36,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     }
     let resolve: (out: Response) => void, reject: (out: Response) => void
     const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
-    const cmd = composeCmd(pieces, values)
+    const cmd = await composeCmd(pieces, values)
     const id = 'id$' + Math.random().toString(36).slice(2)
     let options: SshOptions = {
       ControlMaster: 'auto',

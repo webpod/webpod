@@ -2,15 +2,13 @@ import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
 
-export function composeCmd(pieces: TemplateStringsArray, values: any[]): string {
+export type Values = (string | Promise<string>)[]
+
+export async function composeCmd(pieces: TemplateStringsArray, values: Values) {
   let cmd = pieces[0], i = 0
   while (i < values.length) {
-    let s
-    if (Array.isArray(values[i])) {
-      s = values[i].map((x: any) => escapeshellarg(x)).join(' ')
-    } else {
-      s = escapeshellarg(values[i])
-    }
+    let v = values[i]
+    let s = escapeshellarg(await v)
     cmd += s + pieces[++i]
   }
   return cmd
