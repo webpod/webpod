@@ -22,7 +22,7 @@ export const defaultConfig: {
 } = {}
 
 export type Host = {
-  [key in keyof Config]: Promise<Value>
+  [key in keyof Config]: Config[key] | Promise<Config[key]>
 }
 
 export type Callback<T> = (context: Context) => Promise<T>

@@ -6,8 +6,9 @@ import {Value} from "./host.js";
 export type RemoteShell = {
   (config: Config): RemoteShell
   (pieces: TemplateStringsArray, ...values: Value[]): Promise<Response>
-  exit: () => void
-  check: () => boolean
+  exit(): void
+  check(): boolean
+  test(pieces: TemplateStringsArray, ...values: Value[]): Promise<boolean>;
 }
 
 export type Config = {
@@ -115,6 +116,14 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     '-o', `ControlPath=${controlPath(host)}`,
     '-O', 'check',
   ]).status == 0
+  $.test = async (pieces, ...values) => {
+    try {
+      await $(pieces, ...values)
+      return true
+    } catch {
+      return false
+    }
+  }
   return $
 }
 
