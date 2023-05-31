@@ -2,19 +2,22 @@
   "name": "webpod",
   "version": "0.0.2",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "bin": {
-    "webpod": "dist/cli.js"
+    "webpod": "dist/src/cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "test": "cd test && docker compose up --exit-code-from=webpod",
+    "test": "npm run build && cd test && docker compose up --exit-code-from=webpod",
     "uvu": "uvu -i .ts"
+  },
+  "dependencies": {
+    "@webpod/exec": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.2.4",
-    "esbuild": "0.17.19",
+    "c8": "^7.14.0",
     "typescript": "^5.0.4",
     "uvu": "^0.5.6"
   },

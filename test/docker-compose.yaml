@@ -7,7 +7,7 @@ services:
       - remote-host
     volumes:
       - ../:/webpod
-    command: "npm run uvu"
+    command: "npx c8 --reporter=html npm run uvu"
     networks:
       - default
 

@@ -1,24 +1,29 @@
 import {RemoteShell, Response, ssh} from "./ssh.js";
 
-export type KV = { [key: string]: string }
-export type Value = number | boolean | string | string[] | KV
+export type Value = number | boolean | string | string[] | { [key: string]: string }
 
 export type Config = {
-  [key: string]: Value
-  hostname: string
-  remoteUser: string
-  keepReleases: number
-  defaultTimeout: string
-  env: KV
-  deployPath: string
-  currentPath: string
-  useRelativeSymlink: boolean
+  [key: `my:${string}`]: Value
   binSymlink: string
+  currentPath: string
+  defaultTimeout: string
+  deployPath: string
+  env: { [key: string]: string }
+  hostname: string
+  keepReleases: number
+  releasesList: string[]
+  releasesPath: string
+  releaseOrCurrentPath: string
+  releaseName: string
+  releaseRevision: string
+  remoteUser: string
   symlinkArgs: string[]
+  useRelativeSymlink: boolean
+  userStartedDeploy: string
 }
 
 export const defaultConfig: {
-  [key in keyof Partial<Config>]: Callback<Value | Response>
+  [key in keyof Partial<Config>]: Callback<Value>
 } = {}
 
 export type Host = {
@@ -32,7 +37,7 @@ export type Context = {
   $: RemoteShell
 }
 
-export function define<T extends Value | Response>(config: keyof Config, value: Callback<T>) {
+export function define<T extends Value>(config: keyof Config, value: Callback<T>) {
   defaultConfig[config] = value
 }
 
@@ -51,6 +56,7 @@ export function createHost(hostname: string) {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
       if (typeof value === 'undefined') {
+        // @ts-ignore
         value = defaultConfig[prop.toString()]
       }
       if (typeof value === 'undefined') {
@@ -58,9 +64,7 @@ export function createHost(hostname: string) {
       }
       if (typeof value === 'function') {
         value = await value({host, $})
-        if (value instanceof Response) {
-          value = value.stdout.trim()
-        }
+        // @ts-ignore
         host[prop.toString()] = value
       }
       return value

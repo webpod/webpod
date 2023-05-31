@@ -1,14 +1,15 @@
 import {spawn, spawnSync} from 'node:child_process'
 import process from 'node:process'
 import {controlPath, escapeshellarg} from './utils.js'
-import {Value} from "./host.js";
+import {Value} from "./host.js"
 
 export type RemoteShell = {
-  (config: Config): RemoteShell
   (pieces: TemplateStringsArray, ...values: Value[]): Promise<Response>
+  with(config: Config): RemoteShell
   exit(): void
   check(): boolean
   test(pieces: TemplateStringsArray, ...values: Value[]): Promise<boolean>;
+  cd(path: string): void
 }
 
 export type Config = {
@@ -16,23 +17,16 @@ export type Config = {
   forwardAgent?: boolean
   shell?: string
   prefix?: string
+  cwd?: string
   nothrow?: boolean
   multiplexing?: boolean
   options?: SshOptions
 }
 
 export function ssh(host: string, config: Config = {}): RemoteShell {
-  const $ = function (piecesOrConfig, ...values: Value[]) {
-    if (!Array.isArray(piecesOrConfig)) {
-      const override: Config = piecesOrConfig as Config
-      return ssh(host, {
-        ...config, ...override,
-        options: {...config.options, ...override.options},
-      })
-    }
-    const debug = process.env['WEBPOD_DEBUG'] ?? ''
-    const pieces = piecesOrConfig as TemplateStringsArray
+  const $ = function (pieces, ...values: Value[]) {
     const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
+    const debug = process.env['WEBPOD_DEBUG'] ?? ''
     if (pieces.some(p => p == undefined)) {
       throw new Error(`Malformed command at ${source}`)
     }
@@ -68,15 +62,13 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       `: ${id}; ${config.shell ?? 'bash -ls'}`
     ]
     let input = config.prefix ?? 'set -euo pipefail; '
+    if (config.cwd != undefined) {
+      input += `cd ${escapeshellarg(config.cwd)}; `
+    }
     input += cmd
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
-      console.error(
-        'ssh',
-        args.map(escapeshellarg).join(' '),
-        '<<<',
-        escapeshellarg(input),
-      )
+      console.error('ssh', args.map(escapeshellarg).join(' '), '<<<', escapeshellarg(input))
     }
     const child = spawn('ssh', args, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -97,17 +89,21 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     })
     child.on('close', (code) => {
       if (code === 0 || config.nothrow)
-        resolve(new Response(source, code, stdout, stderr, combined))
+        resolve(new Response(source, code, stdout, stderr))
       else
-        reject(new Response(source, code, stdout, stderr, combined))
+        reject(new Response(source, code, stdout, stderr))
     })
     child.on('error', err => {
-      reject(new Response(source, null, stdout, stderr, combined, err))
+      reject(new Response(source, null, stdout, stderr, err))
     })
     child.stdin.write(input)
     child.stdin.end()
     return promise
   } as RemoteShell
+  $.with = (override) => ssh(host, {
+    ...config, ...override,
+    options: {...config.options, ...override.options}
+  })
   $.exit = () => spawnSync('ssh', [host,
     '-o', `ControlPath=${controlPath(host)}`,
     '-O', 'exit',
@@ -124,25 +120,21 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       return false
     }
   }
+  $.cd = (path) => {
+    config.cwd = path
+  }
   return $
 }
 
-export class Response {
-  readonly #combined: string
-
+export class Response extends String {
   constructor(
     public readonly source: string,
     public readonly exitCode: number | null,
     public readonly stdout: string,
     public readonly stderr: string,
-    combined: string,
     public readonly error?: Error
   ) {
-    this.#combined = combined
-  }
-
-  toString() {
-    return this.#combined
+    super(stdout.trim())
   }
 }
 
