@@ -43,6 +43,7 @@ test('other options', wrap(async () => {
       RequestTTY: 'no',
     }
   })
+  $.exit() // to make sure the connection is closed
   await $`:`
   assert.not.ok($.check())
 }))

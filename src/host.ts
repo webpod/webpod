@@ -1,9 +1,7 @@
-import {RemoteShell, Response, ssh} from "./ssh.js";
-
-export type Value = number | boolean | string | string[] | { [key: string]: string }
+import {RemoteShell, ssh} from "./ssh.js";
 
 export type Config = {
-  [key: `my:${string}`]: Value
+  [key: `str:${string}`]: string
   binSymlink: string
   currentPath: string
   defaultTimeout: string
@@ -22,6 +20,8 @@ export type Config = {
   userStartedDeploy: string
 }
 
+export type Value = number | boolean | string | string[] | { [key: string]: string }
+
 export const defaultConfig: {
   [key in keyof Partial<Config>]: Callback<Value>
 } = {}
@@ -37,8 +37,8 @@ export type Context = {
   $: RemoteShell
 }
 
-export function define<T extends Value>(config: keyof Config, value: Callback<T>) {
-  defaultConfig[config] = value
+export function define<K extends keyof Config>(key: K, value: Callback<Config[K]>) {
+  defaultConfig[key] = value
 }
 
 export function createHost(hostname: string) {

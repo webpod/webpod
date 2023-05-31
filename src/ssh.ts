@@ -1,14 +1,13 @@
 import {spawn, spawnSync} from 'node:child_process'
 import process from 'node:process'
 import {controlPath, escapeshellarg} from './utils.js'
-import {Value} from "./host.js"
 
 export type RemoteShell = {
-  (pieces: TemplateStringsArray, ...values: Value[]): Promise<Response>
+  (pieces: TemplateStringsArray, ...values: (string | Promise<string>)[]): Promise<Response>
   with(config: Config): RemoteShell
   exit(): void
   check(): boolean
-  test(pieces: TemplateStringsArray, ...values: Value[]): Promise<boolean>;
+  test(pieces: TemplateStringsArray, ...values: (string | Promise<string>)[]): Promise<boolean>;
   cd(path: string): void
 }
 
@@ -24,16 +23,23 @@ export type Config = {
 }
 
 export function ssh(host: string, config: Config = {}): RemoteShell {
-  const $ = function (pieces, ...values: Value[]) {
+  const $ = async function (pieces, ...values) {
     const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     const debug = process.env['WEBPOD_DEBUG'] ?? ''
+
     if (pieces.some(p => p == undefined)) {
       throw new Error(`Malformed command at ${source}`)
     }
+
     let resolve: (out: Response) => void, reject: (out: Response) => void
     const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
-    const cmd = composeCmd(pieces, values)
-    const id = 'id$' + Math.random().toString(36).slice(2)
+
+    const stringValues: string[] = []
+    for (const value of values) {
+      stringValues.push(await value)
+    }
+    const cmd = composeCmd(pieces, stringValues)
+
     let options: SshOptions = {
       ControlMaster: 'auto',
       ControlPath: controlPath(host),
@@ -54,6 +60,8 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       options.ControlPersist = 'no'
     }
     options = {...options, ...config.options}
+
+    const id = 'id$' + Math.random().toString(36).slice(2)
     const args: string[] = [
       host,
       ...Object.entries(options).flatMap(
@@ -61,15 +69,18 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       ),
       `: ${id}; ${config.shell ?? 'bash -ls'}`
     ]
+
     let input = config.prefix ?? 'set -euo pipefail; '
     if (config.cwd != undefined) {
       input += `cd ${escapeshellarg(config.cwd)}; `
     }
     input += cmd
+
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
       console.error('ssh', args.map(escapeshellarg).join(' '), '<<<', escapeshellarg(input))
     }
+
     const child = spawn('ssh', args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
@@ -96,8 +107,10 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     child.on('error', err => {
       reject(new Response(source, null, stdout, stderr, err))
     })
+
     child.stdin.write(input)
     child.stdin.end()
+
     return promise
   } as RemoteShell
   $.with = (override) => ssh(host, {
@@ -138,7 +151,7 @@ export class Response extends String {
   }
 }
 
-export function composeCmd(pieces: TemplateStringsArray, values: Value[]) {
+export function composeCmd(pieces: TemplateStringsArray, values: string[]) {
   let cmd = pieces[0], i = 0
   while (i < values.length) {
     let v = values[i]

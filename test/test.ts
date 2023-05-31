@@ -13,6 +13,7 @@ export function wrap(fn: Function) {
       if (err instanceof Response) {
         throw new Error(`${err.stderr.trim()}\n    at ${err.source}`)
       }
+      throw err
     }
   }
 }
