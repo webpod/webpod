@@ -35,7 +35,14 @@ test('escape arguments', wrap(async () => {
 }))
 
 test('other options', wrap(async () => {
-  const $ = ssh('root@example.com', {multiplexing: false, port: 22})
+  const $ = ssh('root@example.com', {
+    forwardAgent: false,
+    multiplexing: false,
+    port: 22,
+    options: {
+      RequestTTY: 'no',
+    }
+  })
   await $`:`
   assert.not.ok($.check())
 }))
