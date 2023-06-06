@@ -1,4 +1,4 @@
-import {define, update} from "../../host.js"
+import {defaults, update} from "../../host.js"
 import * as path from "path"
 import {task} from "../../task.js"
 import exec from "@webpod/exec"
@@ -11,13 +11,16 @@ type Release = {
   rev: string
 }
 
-define('releaseName', async ({$, host}) => {
+defaults.monotonicallyIncreasingReleaseNames = async () => false
+
+defaults.releaseName = async ({$, host}) => {
   $.cd(await host.deployPath)
   const latest = await $`cat .webpod/latest_release || echo 0`
+  update(host, 'monotonicallyIncreasingReleaseNames', true)
   return (parseInt(latest.stdout) + 1).toString()
-})
+}
 
-define('releasesList', async ({$, host}) => {
+defaults.releasesList = async ({$, host}) => {
   $.cd(await host.deployPath)
 
   // If there is no releases return an empty list.
@@ -49,42 +52,42 @@ define('releasesList', async ({$, host}) => {
   }
 
   return releases
-})
+}
 
-define('currentPath', async ({host}) => {
+defaults.currentPath = async ({host}) => {
   return `${await host.deployPath}/current`
-})
+}
 
 // Return release path.
-define('releasesPath', async ({$, host}) => {
+defaults.releasePath = async ({$, host}) => {
   const releaseExists = await $.test`[ -h ${host.deployPath}/release ]`
   if (releaseExists) {
     const link = await $`readlink ${host.deployPath}/release`
-    return link[0] === '/' ? link.toString() : `${host.deployPath}/${link}`
+    return link[0] === '/' ? link.toString() : `${await host.deployPath}/${link}`
   } else {
     throw new Error(`The "release_path" (${host.deployPath}/release) does not exist.`)
   }
-})
+}
 
 // Return the release path during a deployment
 // but fallback to the current path otherwise.
-define('releaseOrCurrentPath', async function releaseOrCurrentPath({$, host}) {
+defaults.releaseOrCurrentPath = async function releaseOrCurrentPath({$, host}) {
   const releaseExists = await $.test`[ -h ${host.deployPath}/release ]`
-  return releaseExists ? await host.releasesPath: await host.currentPath;
-});
+  return releaseExists ? await host.releasePath : await host.currentPath
+}
 
 // Current release revision. Usually a git hash.
-define('releaseRevision', async function releaseRevision({$, host}) {
-  return (await $`cat ${host.releasesPath}/REVISION`).toString();
-});
+defaults.releaseRevision = async function releaseRevision({$, host}) {
+  return (await $`cat ${host.releasePath}/REVISION`).toString()
+}
 
-define('useRelativeSymlink', async function useRelativeSymlink({$}) {
+defaults.useRelativeSymlink = async function useRelativeSymlink({$}) {
   return commandSupportsOption($, 'ln', '--relative')
-})
+}
 
-define('binSymlink', async function binSymlink({host}) {
+defaults.binSymlink = async function binSymlink({host}) {
   return await host.useRelativeSymlink ? ['ln', '-nfs', '--relative'] : ['ln', '-nfs']
-})
+}
 
 // Clean up unfinished releases and prepare next release
 task('deploy:release', async ({host, $}) => {
@@ -100,7 +103,7 @@ task('deploy:release', async ({host, $}) => {
   // if user overrides it, we need to get releasesList manually.
   const releasesList = await host.releasesList
   const releaseName = await host.releaseName
-  const releasePath = 'releases/' + releaseName;
+  const releasePath = 'releases/' + releaseName
 
   // Check what there is no such release path.
   if (await $.test`[ -d ${releasePath} ]`) {
@@ -108,7 +111,7 @@ task('deploy:release', async ({host, $}) => {
   }
 
   // Save release_name if it is a number.
-  if (releaseName.match(/^\d+$/)) {
+  if (await host.monotonicallyIncreasingReleaseNames) {
     await $`echo ${releaseName} > .webpod/latest_release`
   }
 
@@ -119,7 +122,7 @@ task('deploy:release', async ({host, $}) => {
     user: await host.userStartedDeploy,
     rev: exec.git('rev-parse', 'HEAD').trim(),
   }
-  await $`echo ${JSON.stringify(metainfo)} >> .webpod/releases_log`;
+  await $`echo ${JSON.stringify(metainfo)} >> .webpod/releases_log`
 
   // Make new release.
   await $`mkdir -p ${releasePath}`

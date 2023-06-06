@@ -10,7 +10,7 @@ export type Config = {
   hostname: string
   keepReleases: number
   releasesList: string[]
-  releasesPath: string
+  releasePath: string
   releaseOrCurrentPath: string
   releaseName: string
   releaseRevision: string
@@ -20,17 +20,16 @@ export type Config = {
   userStartedDeploy: string
   target: string
   previousReleasePath: string
+  monotonicallyIncreasingReleaseNames: boolean
 }
-
-export type Value = number | boolean | string | string[] | { [key: string]: string }
-
-export const defaultConfig: {
-  [key in keyof Partial<Config>]: Callback<Value>
-} = {}
 
 export type Host = {
   [key in keyof Config]: Promise<Config[key]>
 }
+
+export const defaults: {
+  [key in keyof Partial<Config>]: Callback<Config[key]>
+} = {}
 
 export type Callback<T> = (context: Context) => Promise<T>
 
@@ -39,9 +38,7 @@ export type Context = {
   $: RemoteShell
 }
 
-export function define<K extends keyof Config>(key: K, value: Callback<Config[K]>) {
-  defaultConfig[key] = value
-}
+export type Value = number | boolean | string | string[] | { [key: string]: string }
 
 export function update(host: Host, key: keyof Config, value: Value) {
   // @ts-ignore
@@ -65,7 +62,7 @@ export function createHost(hostname: string, options: {ssh?: SshConfig} = {}) {
       let value = Reflect.get(target, prop)
       if (typeof value === 'undefined') {
         // @ts-ignore
-        value = defaultConfig[prop.toString()]
+        value = defaults[prop.toString()]
       }
       if (typeof value === 'undefined') {
         throw new Error(`Property "${prop.toString()}" is not defined`)

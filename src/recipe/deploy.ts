@@ -1,11 +1,12 @@
 import exec from '@webpod/exec'
-import {define} from "../host.js"
+import {defaults} from "../host.js"
 
 import './deploy/lock.js'
 import './deploy/release.js'
 import './deploy/setup.js'
+import './deploy/upload.js'
 
-define('userStartedDeploy', async () => {
+defaults.userStartedDeploy = async () => {
   if (process.env.CI) {
     return 'ci'
   }
@@ -18,4 +19,4 @@ define('userStartedDeploy', async () => {
     return name.trim()
   }
   return 'no_user'
-})
+}
