@@ -27,11 +27,11 @@ export type Config = {
 
 export function ssh(host: string, config: Config = {}): RemoteShell {
   const $ = async function (pieces, ...values) {
-    const source = new Error().stack!.split(/^\s*at\s/m)[2].trim()
+    const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     const debug = process.env['WEBPOD_DEBUG'] ?? ''
 
     if (pieces.some(p => p == undefined)) {
-      throw new Error(`Malformed command at ${source}`)
+      throw new Error(`Malformed command at ${location}`)
     }
 
     let resolve: (out: Response) => void, reject: (out: Response) => void
@@ -83,27 +83,31 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     })
-    let stdout = '', stderr = '', combined = ''
+    let stdout = '', stderr = ''
     child.stdout.on('data', data => {
+      if (config.verbose) {
+        process.stdout.write(data)
+      }
       stdout += data
-      combined += data
     })
     child.stderr.on('data', data => {
       if (debug.includes('ssh') && /^debug\d:/.test(data)) {
         process.stderr.write(data)
         return
       }
+      if (config.verbose) {
+        process.stderr.write(data)
+      }
       stderr += data
-      combined += data
     })
     child.on('close', (code) => {
       if (code === 0 || config.nothrow)
-        resolve(new Response(source, code, stdout, stderr))
+        resolve(new Response(cmd, location, code, stdout, stderr))
       else
-        reject(new Response(source, code, stdout, stderr))
+        reject(new Response(cmd, location, code, stdout, stderr))
     })
     child.on('error', err => {
-      reject(new Response(source, null, stdout, stderr, err))
+      reject(new Response(cmd, location, null, stdout, stderr, err))
     })
 
     child.stdin.write(cmdPrefix + cmd)
@@ -139,7 +143,8 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
 
 export class Response extends String {
   constructor(
-    public readonly source: string,
+    public readonly command: string,
+    public readonly location: string,
     public readonly exitCode: number | null,
     public readonly stdout: string,
     public readonly stderr: string,

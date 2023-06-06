@@ -11,7 +11,7 @@ export function wrap(fn: Function) {
       await fn()
     } catch (err) {
       if (err instanceof Response) {
-        throw new Error(`${err.stderr.trim()}\n    at ${err.source}`)
+        throw new Error(`${err.stderr.trim()}\n    at ${err.location}`)
       }
       throw err
     }

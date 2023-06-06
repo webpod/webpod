@@ -4,7 +4,6 @@ import {define} from "../host.js"
 import './deploy/lock.js'
 import './deploy/release.js'
 import './deploy/setup.js'
-import {RemoteShell} from "../ssh.js"
 
 define('userStartedDeploy', async () => {
   if (process.env.CI) {

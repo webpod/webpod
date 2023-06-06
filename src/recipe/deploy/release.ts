@@ -1,4 +1,4 @@
-import {define} from "../../host.js"
+import {define, update} from "../../host.js"
 import * as path from "path"
 import {task} from "../../task.js"
 import exec from "@webpod/exec"
@@ -12,7 +12,8 @@ type Release = {
 }
 
 define('releaseName', async ({$, host}) => {
-  const latest = await $`cd ${host.deployPath} cat .webpod/latest_release || echo 0`
+  $.cd(await host.deployPath)
+  const latest = await $`cat .webpod/latest_release || echo 0`
   return (parseInt(latest.stdout) + 1).toString()
 })
 
@@ -50,6 +51,10 @@ define('releasesList', async ({$, host}) => {
   return releases
 })
 
+define('currentPath', async ({host}) => {
+  return `${await host.deployPath}/current`
+})
+
 // Return release path.
 define('releasesPath', async ({$, host}) => {
   const releaseExists = await $.test`[ -h ${host.deployPath}/release ]`
@@ -61,25 +66,25 @@ define('releasesPath', async ({$, host}) => {
   }
 })
 
-// Current release revision. Usually a git hash.
-define('releaseRevision', async ({$, host}) => {
-  return (await $`cat ${host.releasesPath}/REVISION`).toString();
-});
-
-define('useRelativeSymlink', async ({$}) => {
-  return commandSupportsOption($, 'ln', '--relative')
-})
-
-define('binSymlink', async ({host}) => {
-  return host.useRelativeSymlink ? ['ln', '-nfs', '--relative'] : ['ln', '-nfs']
-})
-
 // Return the release path during a deployment
 // but fallback to the current path otherwise.
-define('releaseOrCurrentPath', async ({$, host}) => {
+define('releaseOrCurrentPath', async function releaseOrCurrentPath({$, host}) {
   const releaseExists = await $.test`[ -h ${host.deployPath}/release ]`
   return releaseExists ? await host.releasesPath: await host.currentPath;
 });
+
+// Current release revision. Usually a git hash.
+define('releaseRevision', async function releaseRevision({$, host}) {
+  return (await $`cat ${host.releasesPath}/REVISION`).toString();
+});
+
+define('useRelativeSymlink', async function useRelativeSymlink({$}) {
+  return commandSupportsOption($, 'ln', '--relative')
+})
+
+define('binSymlink', async function binSymlink({host}) {
+  return await host.useRelativeSymlink ? ['ln', '-nfs', '--relative'] : ['ln', '-nfs']
+})
 
 // Clean up unfinished releases and prepare next release
 task('deploy:release', async ({host, $}) => {
@@ -122,10 +127,10 @@ task('deploy:release', async ({host, $}) => {
 
   // Add to releases list.
   releasesList.unshift(releaseName)
-  host.releasesList = releasesList
+  update(host, 'releasesList', releasesList)
 
   // Set previous_release.
   if (releasesList[1]) {
-    host.previousReleasePath = `${await host.deployPath}/releases/${releasesList[1]}`
+    update(host, 'previousReleasePath', `${await host.deployPath}/releases/${releasesList[1]}`)
   }
 })

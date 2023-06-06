@@ -40,7 +40,7 @@ export function escapeshellarg(arg: string) {
 }
 
 export async function commandSupportsOption($: RemoteShell, command: string, option: string) {
-  const man = await $`(man $command 2>&1 || $command -h 2>&1 || $command --help 2>&1) | grep -- $option || true`
+  const man = await $`(man ${command} 2>&1 || ${command} -h 2>&1 || ${command} --help 2>&1) | grep -- ${option} || true`
   if (!man) {
     return false
   }

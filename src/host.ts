@@ -1,4 +1,4 @@
-import {RemoteShell, ssh} from "./ssh.js";
+import {RemoteShell, ssh, Config as SshConfig} from "./ssh.js";
 
 export type Config = {
   [key: `str:${string}`]: string
@@ -29,7 +29,7 @@ export const defaultConfig: {
 } = {}
 
 export type Host = {
-  [key in keyof Config]: Config[key] | Promise<Config[key]>
+  [key in keyof Config]: Promise<Config[key]>
 }
 
 export type Callback<T> = (context: Context) => Promise<T>
@@ -43,7 +43,12 @@ export function define<K extends keyof Config>(key: K, value: Callback<Config[K]
   defaultConfig[key] = value
 }
 
-export function createHost(hostname: string) {
+export function update(host: Host, key: keyof Config, value: Value) {
+  // @ts-ignore
+  host[key] = value
+}
+
+export function createHost(hostname: string, options: {ssh?: SshConfig} = {}) {
   const config = {} as Config
   if (hostname.includes('@')) {
     const [user, name] = hostname.split('@')
@@ -54,9 +59,7 @@ export function createHost(hostname: string) {
   }
 
   const addr = (config.remoteUser ? config.remoteUser + '@' : '') + config.hostname || 'localhost'
-  const $ = ssh(addr, {
-    verbose: true,
-  })
+  const $ = ssh(addr, options.ssh)
   const host = new Proxy(config, {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
@@ -65,7 +68,7 @@ export function createHost(hostname: string) {
         value = defaultConfig[prop.toString()]
       }
       if (typeof value === 'undefined') {
-        throw new Error(`Property ${prop.toString()} is not defined`)
+        throw new Error(`Property "${prop.toString()}" is not defined`)
       }
       if (typeof value === 'function') {
         value = await value({host, $})
