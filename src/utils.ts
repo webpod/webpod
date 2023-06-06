@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
+import {RemoteShell} from "./ssh.js"
 
 export function isWritable(path: string): boolean {
   try {
@@ -36,4 +37,12 @@ export function escapeshellarg(arg: string) {
       .replace(/\0/g, '\\0') +
     `'`
   )
+}
+
+export async function commandSupportsOption($: RemoteShell, command: string, option: string) {
+  const man = await $`(man $command 2>&1 || $command -h 2>&1 || $command --help 2>&1) | grep -- $option || true`
+  if (!man) {
+    return false
+  }
+  return man.includes(option)
 }

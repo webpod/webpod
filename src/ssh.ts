@@ -2,12 +2,14 @@ import {spawn, spawnSync} from 'node:child_process'
 import process from 'node:process'
 import {controlPath, escapeshellarg} from './utils.js'
 
+type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
+
 export type RemoteShell = {
-  (pieces: TemplateStringsArray, ...values: (string | Promise<string>)[]): Promise<Response>
+  (pieces: TemplateStringsArray, ...values: Values): Promise<Response>
   with(config: Config): RemoteShell
   exit(): void
   check(): boolean
-  test(pieces: TemplateStringsArray, ...values: (string | Promise<string>)[]): Promise<boolean>;
+  test(pieces: TemplateStringsArray, ...values: Values): Promise<boolean>;
   cd(path: string): void
 }
 
@@ -19,6 +21,7 @@ export type Config = {
   cwd?: string
   nothrow?: boolean
   multiplexing?: boolean
+  verbose?: boolean
   options?: SshOptions
 }
 
@@ -33,12 +36,6 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
 
     let resolve: (out: Response) => void, reject: (out: Response) => void
     const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
-
-    const stringValues: string[] = []
-    for (const value of values) {
-      stringValues.push(await value)
-    }
-    const cmd = composeCmd(pieces, stringValues)
 
     let options: SshOptions = {
       ControlMaster: 'auto',
@@ -70,15 +67,16 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       `: ${id}; ${config.shell ?? 'bash -ls'}`
     ]
 
-    let input = config.prefix ?? 'set -euo pipefail; '
-    if (config.cwd != undefined) {
-      input += `cd ${escapeshellarg(config.cwd)}; `
-    }
-    input += cmd
+    const cmdPrefix = config.prefix ?? 'set -euo pipefail; '
+    const cmd = (config.cwd != undefined ? `cd ${escapeshellarg(config.cwd)}; ` : ``)
+      + await composeCmd(pieces, values)
 
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
-      console.error('ssh', args.map(escapeshellarg).join(' '), '<<<', escapeshellarg(input))
+      console.error('ssh', args.map(escapeshellarg).join(' '), '<<<', escapeshellarg(cmdPrefix + cmd))
+    }
+    if (config.verbose) {
+      console.error('$', cmd)
     }
 
     const child = spawn('ssh', args, {
@@ -108,7 +106,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
       reject(new Response(source, null, stdout, stderr, err))
     })
 
-    child.stdin.write(input)
+    child.stdin.write(cmdPrefix + cmd)
     child.stdin.end()
 
     return promise
@@ -151,11 +149,16 @@ export class Response extends String {
   }
 }
 
-export function composeCmd(pieces: TemplateStringsArray, values: string[]) {
+export async function composeCmd(pieces: TemplateStringsArray, values: Values) {
   let cmd = pieces[0], i = 0
   while (i < values.length) {
-    let v = values[i]
-    let s = escapeshellarg(v.toString())
+    const v = await values[i]
+    let s = ''
+    if (Array.isArray(v)) {
+      s = v.map(escapeshellarg).join(' ')
+    } else {
+      s = escapeshellarg(v.toString())
+    }
     cmd += s + pieces[++i]
   }
   return cmd

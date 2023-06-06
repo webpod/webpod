@@ -2,7 +2,7 @@ import {RemoteShell, ssh} from "./ssh.js";
 
 export type Config = {
   [key: `str:${string}`]: string
-  binSymlink: string
+  binSymlink: string[]
   currentPath: string
   defaultTimeout: string
   deployPath: string
@@ -18,6 +18,8 @@ export type Config = {
   symlinkArgs: string[]
   useRelativeSymlink: boolean
   userStartedDeploy: string
+  target: string
+  previousReleasePath: string
 }
 
 export type Value = number | boolean | string | string[] | { [key: string]: string }
@@ -51,7 +53,10 @@ export function createHost(hostname: string) {
     config.hostname = hostname
   }
 
-  const $ = ssh((config.remoteUser ? config.remoteUser + '@' : '') + config.hostname || 'localhost')
+  const addr = (config.remoteUser ? config.remoteUser + '@' : '') + config.hostname || 'localhost'
+  const $ = ssh(addr, {
+    verbose: true,
+  })
   const host = new Proxy(config, {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
