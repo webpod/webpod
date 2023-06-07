@@ -12,9 +12,6 @@
     "test": "npm run build && cd test && docker compose up --exit-code-from=webpod",
     "uvu": "uvu -i .ts"
   },
-  "dependencies": {
-    "@webpod/exec": "^1.0.1"
-  },
   "devDependencies": {
     "@types/node": "^20.2.4",
     "c8": "^7.14.0",

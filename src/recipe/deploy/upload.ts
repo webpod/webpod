@@ -1,5 +1,5 @@
 import {task} from "../../task.js"
-import exec from "../../exec/exec.js"
+import {exec} from "../../exec/exec.js"
 
 task('deploy:upload', async ({host, $}) => {
   const r = exec.rsync('-az', 'dist/',  `${await host.remoteUser}@${await host.hostname}:${await host.releasePath}`)

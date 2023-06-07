@@ -1,4 +1,21 @@
 import {task} from "../../task.js"
+import {defaults} from "../../host.js"
+import {exec} from "../../exec/exec.js"
+
+defaults.userStartedDeploy = async () => {
+  if (process.env.CI) {
+    return 'ci'
+  }
+  let name = exec.git('config', '--get', 'user.name')
+  if (name.status === 0) {
+    return name.trim()
+  }
+  name = exec.whoami()
+  if (name.status === 0) {
+    return name.trim()
+  }
+  return 'no_user'
+}
 
 task('deploy:lock', async ({$, host}) => {
   const locked = await $`[ -f ${await host.deployPath}/.webpod/deploy.lock ] && printf +locked || echo ${await host.userStartedDeploy} > ${await host.deployPath}/.webpod/deploy.lock`

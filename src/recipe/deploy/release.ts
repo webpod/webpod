@@ -1,8 +1,8 @@
 import {defaults, update} from "../../host.js"
 import * as path from "path"
 import {task} from "../../task.js"
-import exec from "@webpod/exec"
 import {commandSupportsOption} from "../../utils.js"
+import {exec} from "../../exec/exec.js"
 
 type Release = {
   createdAt: string

@@ -13,5 +13,5 @@ interface Binaries {
   [bin: string]: Bin
 }
 
-declare const exec: Binaries
-export default exec
+export const exec: Binaries
+
