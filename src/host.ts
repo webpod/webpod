@@ -23,6 +23,8 @@ export type Config = {
   monotonicallyIncreasingReleaseNames: boolean
   sharedDirs: string[]
   sharedFiles: string[]
+  useAtomicSymlink: boolean
+  cleanupUseSudo: boolean
 }
 
 export type Host = {

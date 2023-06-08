@@ -129,11 +129,11 @@ task('deploy:release', async ({host, $}) => {
   await $`${host.binSymlink} ${releasePath} ${host.deployPath}/release`
 
   // Add to releases list.
-  releasesList.unshift(releaseName)
+  releasesList.push(releaseName)
   update(host, 'releasesList', releasesList)
 
   // Set previous_release.
-  if (releasesList[1]) {
-    update(host, 'previousReleasePath', `${await host.deployPath}/releases/${releasesList[1]}`)
+  if (releasesList.length > 2) {
+    update(host, 'previousReleasePath', `${await host.deployPath}/releases/${releasesList.at(-2)}`)
   }
 })
