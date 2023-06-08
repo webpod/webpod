@@ -1,4 +1,4 @@
-import {RemoteShell, ssh, Config as SshConfig} from "./ssh.js";
+import {RemoteShell, ssh, Config as SshConfig} from './ssh.js'
 
 export type Config = {
   [key: `str:${string}`]: string
@@ -21,6 +21,8 @@ export type Config = {
   target: string
   previousReleasePath: string
   monotonicallyIncreasingReleaseNames: boolean
+  sharedDirs: string[]
+  sharedFiles: string[]
 }
 
 export type Host = {
@@ -45,7 +47,7 @@ export function update(host: Host, key: keyof Config, value: Value) {
   host[key] = value
 }
 
-export function createHost(hostname: string, options: {ssh?: SshConfig} = {}) {
+export function createHost(hostname: string, options: { ssh?: SshConfig } = {}) {
   const config = {} as Config
   if (hostname.includes('@')) {
     const [user, name] = hostname.split('@')

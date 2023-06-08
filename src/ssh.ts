@@ -68,7 +68,7 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     ]
 
     const cmdPrefix = config.prefix ?? 'set -euo pipefail; '
-    const cmd = (config.cwd != undefined ? `cd ${escapeshellarg(config.cwd)}; ` : ``)
+    const cmd = (config.cwd != undefined && config.cwd != '' ? `cd ${escapeshellarg(config.cwd)}; ` : ``)
       + await composeCmd(pieces, values)
 
     if (debug !== '') {
