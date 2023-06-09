@@ -48,6 +48,10 @@ export async function commandSupportsOption($: RemoteShell, command: string, opt
   return man.includes(option)
 }
 
+export function addr(host: {remoteUser?: string, hostname: string}): string {
+  return (host.remoteUser ? host.remoteUser + '@' : '') + (host.hostname || 'localhost')
+}
+
 export async function spawn(command: string, args: string[], options: SpawnOptions = {}) {
   const child = _spawn(command, args, {
     stdio: 'pipe',

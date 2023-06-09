@@ -1,4 +1,5 @@
 import {RemoteShell, ssh, Config as SshConfig} from './ssh.js'
+import {addr} from './utils.js'
 
 export type Config = {
   [key: `str:${string}`]: string
@@ -59,8 +60,7 @@ export function createHost(hostname: string, options: { ssh?: SshConfig } = {}) 
     config.hostname = hostname
   }
 
-  const addr = (config.remoteUser ? config.remoteUser + '@' : '') + config.hostname || 'localhost'
-  const $ = ssh(addr, options.ssh)
+  const $ = ssh(addr(config), options.ssh)
   const host = new Proxy(config, {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
