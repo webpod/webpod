@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
 import {RemoteShell} from "./ssh.js"
+import {spawn as _spawn, SpawnOptions} from 'node:child_process'
 
 export function isWritable(path: string): boolean {
   try {
@@ -45,4 +46,24 @@ export async function commandSupportsOption($: RemoteShell, command: string, opt
     return false
   }
   return man.includes(option)
+}
+
+export async function spawn(command: string, args: string[], options: SpawnOptions = {}) {
+  const child = _spawn(command, args, {
+    stdio: 'pipe',
+    ...options,
+  })
+  return new Promise((resolve, reject) => {
+    let stdout = '', stderr = ''
+    child.stdout?.on('data', data => stdout += data)
+    child.stderr?.on('data', data => stderr += data)
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({stdout, stderr})
+      } else {
+        reject(new Error(`Process exited with code ${code}`))
+      }
+    })
+  })
 }
