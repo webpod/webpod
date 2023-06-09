@@ -1,5 +1,6 @@
 dist/
 node_modules/
 coverage/
+local/server/id_rsa*
 package-lock.json
 src/playground.ts

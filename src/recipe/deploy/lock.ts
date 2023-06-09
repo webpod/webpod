@@ -1,6 +1,6 @@
 import {task} from "../../task.js"
 import {defaults} from "../../host.js"
-import {exec} from "../../exec/exec.js"
+import {exec} from "../../utils.js"
 
 defaults.userStartedDeploy = async () => {
   if (process.env.CI) {

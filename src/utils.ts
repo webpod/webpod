@@ -2,7 +2,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
 import {RemoteShell} from "./ssh.js"
-import {spawn as _spawn, SpawnOptions} from 'node:child_process'
+import {spawn as _spawn, SpawnOptions, spawnSync} from 'node:child_process'
+import {SpawnSyncOptions} from 'child_process'
 
 export function isWritable(path: string): boolean {
   try {
@@ -71,3 +72,22 @@ export async function spawn(command: string, args: string[], options: SpawnOptio
     })
   })
 }
+
+interface Result extends String {
+  pid: number
+  stdout: string
+  stderr: string
+  status: number | null
+  signal: string | null
+  error?: Error
+}
+
+type Bin = (...args: string[]) => Result
+
+export const exec: {[bin: string]: Bin} = new Proxy({}, {
+  get: (_, bin: string) => function (this: SpawnSyncOptions, ...args: string[]) {
+    const out = spawnSync(bin, args, {encoding: 'utf8', ...this})
+    return Object.assign(new String(out.stdout), out)
+  }
+})
+

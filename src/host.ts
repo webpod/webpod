@@ -26,6 +26,7 @@ export type Config = {
   sharedFiles: string[]
   useAtomicSymlink: boolean
   cleanupUseSudo: boolean
+  sudoPassword: string
 }
 
 export type Host = {

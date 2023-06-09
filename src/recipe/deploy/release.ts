@@ -2,7 +2,7 @@ import {defaults, update} from "../../host.js"
 import * as path from "path"
 import {task} from "../../task.js"
 import {commandSupportsOption} from "../../utils.js"
-import {exec} from "../../exec/exec.js"
+import {exec} from "../../utils.js"
 
 type Release = {
   createdAt: string
