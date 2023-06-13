@@ -6,14 +6,14 @@ type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
 
 export type RemoteShell = {
   (pieces: TemplateStringsArray, ...values: Values): Promise<Response>
-  with(config: Config): RemoteShell
+  with(config: SshConfig): RemoteShell
   exit(): void
   check(): boolean
   test(pieces: TemplateStringsArray, ...values: Values): Promise<boolean>;
   cd(path: string): void
 }
 
-export type Config = {
+export type SshConfig = {
   port?: number | string
   forwardAgent?: boolean
   shell?: string
@@ -22,10 +22,11 @@ export type Config = {
   nothrow?: boolean
   multiplexing?: boolean
   verbose?: boolean
+  become?: string
   options?: SshOptions
 }
 
-export function ssh(host: string, config: Config = {}): RemoteShell {
+export function ssh(host: string, config: SshConfig = {}): RemoteShell {
   const $ = async function (pieces, ...values) {
     const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     const debug = process.env['WEBPOD_DEBUG'] ?? ''
@@ -59,12 +60,16 @@ export function ssh(host: string, config: Config = {}): RemoteShell {
     options = {...options, ...config.options}
 
     const id = 'id$' + Math.random().toString(36).slice(2)
+    let become = ''
+    if (config.become != undefined) {
+      become = `sudo -H -u ${escapeshellarg(config.become)}`
+    }
     const args: string[] = [
       host,
       ...Object.entries(options).flatMap(
         ([key, value]) => ['-o', `${key}=${value}`]
       ),
-      `: ${id}; ${config.shell ?? 'bash -ls'}`
+      `: ${id}; ${become} ${config.shell ?? 'bash -ls'}`
     ]
 
     const cmdPrefix = config.prefix ?? 'set -euo pipefail; '

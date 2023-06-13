@@ -1,32 +1,35 @@
-import {RemoteShell, ssh, Config as SshConfig} from './ssh.js'
+import {RemoteShell, ssh, SshConfig as SshConfig} from './ssh.js'
 import {addr} from './utils.js'
 
 export type Config = {
   [key: `str:${string}`]: string
   binSymlink: string[]
+  cleanupUseSudo: boolean
   currentPath: string
   defaultTimeout: string
   deployPath: string
+  domain: string
   env: { [key: string]: string }
   hostname: string
   keepReleases: number
-  releasesList: string[]
-  releasePath: string
-  releaseOrCurrentPath: string
-  releaseName: string
-  releaseRevision: string
-  remoteUser: string
-  symlinkArgs: string[]
-  useRelativeSymlink: boolean
-  userStartedDeploy: string
-  target: string
-  previousReleasePath: string
   monotonicallyIncreasingReleaseNames: boolean
+  nodeVersion: string
+  previousReleasePath: string
+  publicPath: string
+  releaseName: string
+  releaseOrCurrentPath: string
+  releasePath: string
+  releaseRevision: string
+  releasesList: string[]
+  remoteUser: string
   sharedDirs: string[]
   sharedFiles: string[]
-  useAtomicSymlink: boolean
-  cleanupUseSudo: boolean
   sudoPassword: string
+  symlinkArgs: string[]
+  target: string
+  useAtomicSymlink: boolean
+  useRelativeSymlink: boolean
+  userStartedDeploy: string
 }
 
 export type Host = {

@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
-import {RemoteShell} from "./ssh.js"
+import {RemoteShell} from './ssh.js'
 import {spawn as _spawn, SpawnOptions, spawnSync} from 'node:child_process'
 import {SpawnSyncOptions} from 'child_process'
+import path from 'node:path'
 
 export function isWritable(path: string): boolean {
   try {
@@ -49,7 +50,7 @@ export async function commandSupportsOption($: RemoteShell, command: string, opt
   return man.includes(option)
 }
 
-export function addr(host: {remoteUser?: string, hostname: string}): string {
+export function addr(host: { remoteUser?: string, hostname: string }): string {
   return (host.remoteUser ? host.remoteUser + '@' : '') + (host.hostname || 'localhost')
 }
 
@@ -67,7 +68,7 @@ export async function spawn(command: string, args: string[], options: SpawnOptio
       if (code === 0) {
         resolve({stdout, stderr})
       } else {
-        reject(new Error(`Process exited with code ${code}`))
+        reject(new Error())
       }
     })
   })
@@ -84,10 +85,31 @@ interface Result extends String {
 
 type Bin = (...args: string[]) => Result
 
-export const exec: {[bin: string]: Bin} = new Proxy({}, {
+export const exec: { [bin: string]: Bin } = new Proxy({}, {
   get: (_, bin: string) => function (this: SpawnSyncOptions, ...args: string[]) {
     const out = spawnSync(bin, args, {encoding: 'utf8', ...this})
     return Object.assign(new String(out.stdout), out)
   }
 })
 
+export function str(pieces: TemplateStringsArray, ...args: string[]): string {
+  let cmd = pieces[0], i = 0
+  for (; i < args.length; i++) {
+    cmd += args[i] + pieces[i + 1]
+  }
+  return cmd
+}
+
+export function readDir(rootPath: string, dirPath = rootPath) {
+  let filesList: string[] = []
+  const files = fs.readdirSync(dirPath)
+  for (const file of files) {
+    const absolutePath = path.join(dirPath, file)
+    if (fs.statSync(absolutePath).isFile()) {
+      filesList.push(path.relative(rootPath, absolutePath))
+    } else {
+      filesList = [...filesList, ...readDir(rootPath, absolutePath)]
+    }
+  }
+  return filesList
+}
