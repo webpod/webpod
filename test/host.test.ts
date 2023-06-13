@@ -4,13 +4,19 @@ import {createHost, defaults} from "../src/host.js"
 const test = suite('host')
 
 test('createHost', wrap(async () => {
-  const {host} = createHost('root@example.com')
+  const {host} = createHost({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   assert.equal(await host.hostname, 'example.com')
   assert.equal(await host.remoteUser, 'root')
 }))
 
 test('define', wrap(async () => {
-  const {host} = createHost('root@example.com')
+  const {host} = createHost({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   defaults['str:whoami'] = async ({$}) => {
     return (await $`whoami`).toString()
   }
@@ -18,7 +24,10 @@ test('define', wrap(async () => {
 }))
 
 test('await promise in $', wrap(async () => {
-  const {host, $} = createHost('root@example.com')
+  const {host, $} = createHost({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   defaults['str:whoami'] = async ({$}) => {
     return (await $`whoami`).toString()
   }

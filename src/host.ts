@@ -40,7 +40,7 @@ export const defaults: {
 export type Callback<T> = (context: Context) => Promise<T>
 
 export type Context = {
-  config: Config
+  config: Partial<Config>
   host: Host
   $: RemoteShell
 }
@@ -52,16 +52,7 @@ export function update(host: Host, key: keyof Config, value: Value) {
   host[key] = value
 }
 
-export function createHost(hostname: string, defaultConfig: Partial<Config> = {}) {
-  const config = defaultConfig as Config
-  if (hostname.includes('@')) {
-    const [user, name] = hostname.split('@')
-    config.hostname = name
-    config.remoteUser = user
-  } else {
-    config.hostname = hostname
-  }
-
+export function createHost(config: Partial<Config>): Context {
   const $ = ssh(config)
   const host = new Proxy(config, {
     async get(target, prop) {
@@ -81,5 +72,5 @@ export function createHost(hostname: string, defaultConfig: Partial<Config> = {}
       return value
     },
   }) as any as Host
-  return {host, $, config}
+  return {config, host, $}
 }
