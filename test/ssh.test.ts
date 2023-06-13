@@ -4,19 +4,28 @@ import {ssh} from '../src/ssh.js'
 const test = suite('ssh')
 
 test('echo', wrap(async () => {
-  const $ = ssh('root@example.com')
+  const $ = ssh({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   const {stdout} = await $`echo hello, world`
   assert.equal(stdout, 'hello, world\n')
 }))
 
 test('pipefail', wrap(async () => {
-  const $ = ssh('root@example.com')
+  const $ = ssh({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   const {exitCode} = await $.with({nothrow: true})`fail | cat`
   assert.is(exitCode, 127)
 }))
 
 test('multiplexing', wrap(async () => {
-  const $ = ssh('root@example.com')
+  const $ = ssh({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   await $`:`
   assert.ok($.check())
   $.exit()
@@ -24,7 +33,10 @@ test('multiplexing', wrap(async () => {
 }))
 
 test('escape arguments', wrap(async () => {
-  const $ = ssh('root@example.com')
+  const $ = ssh({
+    remoteUser: 'root',
+    hostname: 'example.com',
+  })
   const dirName = 'hello, world'
   try {
     await $`mkdir ${dirName}`
@@ -35,7 +47,9 @@ test('escape arguments', wrap(async () => {
 }))
 
 test('other options', wrap(async () => {
-  const $ = ssh('root@example.com', {
+  const $ = ssh({
+    remoteUser: 'root',
+    hostname: 'example.com',
     forwardAgent: false,
     multiplexing: false,
     port: 22,

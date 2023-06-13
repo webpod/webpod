@@ -1,6 +1,8 @@
 import {spawn, spawnSync} from 'node:child_process'
 import process from 'node:process'
-import {controlPath, escapeshellarg} from './utils.js'
+import {createGzip} from 'node:zlib'
+import fs from 'node:fs'
+import {addr, controlPath, escapeshellarg} from './utils.js'
 
 type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
 
@@ -11,9 +13,12 @@ export type RemoteShell = {
   check(): boolean
   test(pieces: TemplateStringsArray, ...values: Values): Promise<boolean>;
   cd(path: string): void
+  upload(local: string, remote: string): Promise<Response>
 }
 
 export type SshConfig = {
+  remoteUser?: string
+  hostname?: string
   port?: number | string
   forwardAgent?: boolean
   shell?: string
@@ -26,7 +31,7 @@ export type SshConfig = {
   options?: SshOptions
 }
 
-export function ssh(host: string, config: SshConfig = {}): RemoteShell {
+export function ssh(config: SshConfig): RemoteShell {
   const $ = async function (pieces, ...values) {
     const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     const debug = process.env['WEBPOD_DEBUG'] ?? ''
@@ -38,43 +43,16 @@ export function ssh(host: string, config: SshConfig = {}): RemoteShell {
     let resolve: (out: Response) => void, reject: (out: Response) => void
     const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
 
-    let options: SshOptions = {
-      ControlMaster: 'auto',
-      ControlPath: controlPath(host),
-      ControlPersist: '5m',
-      ConnectTimeout: '5s',
-      ForwardAgent: 'yes',
-      StrictHostKeyChecking: 'accept-new',
-    }
-    if (config.port != undefined) {
-      options.Port = config.port.toString()
-    }
-    if (config.forwardAgent != undefined) {
-      options.ForwardAgent = config.forwardAgent ? 'yes' : 'no'
-    }
-    if (config.multiplexing === false) {
-      options.ControlMaster = 'no'
-      options.ControlPath = 'none'
-      options.ControlPersist = 'no'
-    }
-    options = {...options, ...config.options}
-
+    const args = sshArgs(config)
     const id = 'id$' + Math.random().toString(36).slice(2)
-    let become = ''
-    if (config.become != undefined) {
-      become = `sudo -H -u ${escapeshellarg(config.become)}`
-    }
-    const args: string[] = [
-      host,
-      ...Object.entries(options).flatMap(
-        ([key, value]) => ['-o', `${key}=${value}`]
-      ),
-      `: ${id}; ${become} ${config.shell ?? 'bash -ls'}`
-    ]
+    args.push(
+      `: ${id}; ` +
+      (config.become ? `sudo -H -u ${escapeshellarg(config.become)} ` : '') +
+      (config.shell ?? 'bash -ls')
+    )
 
     const cmdPrefix = config.prefix ?? 'set -euo pipefail; '
-    const cmd = (config.cwd != undefined && config.cwd != '' ? `cd ${escapeshellarg(config.cwd)}; ` : ``)
-      + await composeCmd(pieces, values)
+    const cmd = workingDir(config.cwd) + await composeCmd(pieces, values)
 
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
@@ -120,16 +98,16 @@ export function ssh(host: string, config: SshConfig = {}): RemoteShell {
 
     return promise
   } as RemoteShell
-  $.with = (override) => ssh(host, {
+  $.with = (override) => ssh({
     ...config, ...override,
     options: {...config.options, ...override.options}
   })
-  $.exit = () => spawnSync('ssh', [host,
-    '-o', `ControlPath=${controlPath(host)}`,
+  $.exit = () => spawnSync('ssh', [addr(config),
+    '-o', `ControlPath=${controlPath(addr(config))}`,
     '-O', 'exit',
   ])
-  $.check = () => spawnSync('ssh', [host,
-    '-o', `ControlPath=${controlPath(host)}`,
+  $.check = () => spawnSync('ssh', [addr(config),
+    '-o', `ControlPath=${controlPath(addr(config))}`,
     '-O', 'check',
   ]).status == 0
   $.test = async (pieces, ...values) => {
@@ -143,7 +121,95 @@ export function ssh(host: string, config: SshConfig = {}): RemoteShell {
   $.cd = (path) => {
     config.cwd = path
   }
+  $.upload = (local, remote) => {
+    const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
+    const debug = process.env['WEBPOD_DEBUG'] ?? ''
+
+    let resolve: (out: Response) => void, reject: (out: Response) => void
+    const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
+
+    const args = sshArgs(config)
+    const cmd = workingDir(config.cwd) + `zcat > ${escapeshellarg(remote)}`
+    if (config.become) {
+      args.push(`sudo -H -u ${escapeshellarg(config.become)}`)
+    }
+    args.push(`bash -c ${escapeshellarg(cmd)}`)
+
+    if (debug !== '') {
+      if (debug.includes('ssh')) args.unshift('-vvv')
+      console.error('ssh', args.map(escapeshellarg).join(' '), '<', local)
+    }
+    if (config.verbose) {
+      console.error('$', cmd)
+    }
+
+    const child = spawn('ssh', args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    })
+    let stdout = '', stderr = ''
+    child.stdout.on('data', data => {
+      stdout += data
+    })
+    child.stderr.on('data', data => {
+      if (config.verbose) {
+        process.stderr.write(data)
+      }
+      stderr += data
+    })
+    child.on('close', (code) => {
+      if (code === 0 || config.nothrow)
+        resolve(new Response(cmd, location, code, stdout, stderr))
+      else
+        reject(new Response(cmd, location, code, stdout, stderr))
+    })
+    child.on('error', err => {
+      reject(new Response(cmd, location, null, stdout, stderr, err))
+    })
+
+    const gzip = createGzip()
+    const source = fs.createReadStream(local)
+    source.pipe(gzip).pipe(child.stdin)
+
+    return promise
+  }
   return $
+}
+
+export function sshArgs(config: SshConfig): string[] {
+  let options: SshOptions = {
+    ControlMaster: 'auto',
+    ControlPath: controlPath(addr(config)),
+    ControlPersist: '5m',
+    ConnectTimeout: '5s',
+    ForwardAgent: 'yes',
+    StrictHostKeyChecking: 'accept-new',
+  }
+  if (config.port != undefined) {
+    options.Port = config.port.toString()
+  }
+  if (config.forwardAgent != undefined) {
+    options.ForwardAgent = config.forwardAgent ? 'yes' : 'no'
+  }
+  if (config.multiplexing === false) {
+    options.ControlMaster = 'no'
+    options.ControlPath = 'none'
+    options.ControlPersist = 'no'
+  }
+  options = {...options, ...config.options}
+  return [
+    addr(config),
+    ...Object.entries(options).flatMap(
+      ([key, value]) => ['-o', `${key}=${value}`]
+    ),
+  ]
+}
+
+function workingDir(cwd: string | undefined): string {
+  if (cwd == undefined || cwd == '') {
+    return ``
+  }
+  return `cd ${escapeshellarg(cwd)}; `
 }
 
 export class Response extends String {

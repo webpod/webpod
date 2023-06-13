@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import process from 'node:process'
 import {RemoteShell} from './ssh.js'
-import {spawn as _spawn, SpawnOptions, spawnSync} from 'node:child_process'
+import {spawnSync} from 'node:child_process'
 import {SpawnSyncOptions} from 'child_process'
 import path from 'node:path'
 
@@ -50,28 +50,8 @@ export async function commandSupportsOption($: RemoteShell, command: string, opt
   return man.includes(option)
 }
 
-export function addr(host: { remoteUser?: string, hostname: string }): string {
+export function addr(host: { remoteUser?: string, hostname?: string }): string {
   return (host.remoteUser ? host.remoteUser + '@' : '') + (host.hostname || 'localhost')
-}
-
-export async function spawn(command: string, args: string[], options: SpawnOptions = {}) {
-  const child = _spawn(command, args, {
-    stdio: 'pipe',
-    ...options,
-  })
-  return new Promise((resolve, reject) => {
-    let stdout = '', stderr = ''
-    child.stdout?.on('data', data => stdout += data)
-    child.stderr?.on('data', data => stderr += data)
-    child.on('error', reject)
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve({stdout, stderr})
-      } else {
-        reject(new Error())
-      }
-    })
-  })
 }
 
 interface Result extends String {

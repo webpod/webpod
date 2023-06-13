@@ -1,7 +1,7 @@
 import {defaults, update} from "../../host.js"
 import * as path from "path"
 import {task} from "../../task.js"
-import {commandSupportsOption} from "../../utils.js"
+import {commandSupportsOption, str} from '../../utils.js'
 import {exec} from "../../utils.js"
 
 type Release = {
@@ -65,7 +65,7 @@ defaults.releasePath = async ({$, host}) => {
     const link = await $`readlink ${host.deployPath}/release`
     return link[0] === '/' ? link.toString() : `${await host.deployPath}/${link}`
   } else {
-    throw new Error(`The "release_path" (${host.deployPath}/release) does not exist.`)
+    throw new Error(str`The "release_path" (${await host.deployPath}/release) does not exist.`)
   }
 }
 

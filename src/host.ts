@@ -1,7 +1,6 @@
 import {RemoteShell, ssh, SshConfig as SshConfig} from './ssh.js'
-import {addr} from './utils.js'
 
-export type Config = {
+export type Config = SshConfig & {
   [key: `str:${string}`]: string
   binSymlink: string[]
   cleanupUseSudo: boolean
@@ -10,18 +9,16 @@ export type Config = {
   deployPath: string
   domain: string
   env: { [key: string]: string }
-  hostname: string
   keepReleases: number
   monotonicallyIncreasingReleaseNames: boolean
   nodeVersion: string
   previousReleasePath: string
-  publicPath: string
+  publicDir: string
   releaseName: string
   releaseOrCurrentPath: string
   releasePath: string
   releaseRevision: string
   releasesList: string[]
-  remoteUser: string
   sharedDirs: string[]
   sharedFiles: string[]
   sudoPassword: string
@@ -43,6 +40,7 @@ export const defaults: {
 export type Callback<T> = (context: Context) => Promise<T>
 
 export type Context = {
+  config: Config
   host: Host
   $: RemoteShell
 }
@@ -54,8 +52,8 @@ export function update(host: Host, key: keyof Config, value: Value) {
   host[key] = value
 }
 
-export function createHost(hostname: string, options: { ssh?: SshConfig } = {}) {
-  const config = {} as Config
+export function createHost(hostname: string, defaultConfig: Partial<Config> = {}) {
+  const config = defaultConfig as Config
   if (hostname.includes('@')) {
     const [user, name] = hostname.split('@')
     config.hostname = name
@@ -64,7 +62,7 @@ export function createHost(hostname: string, options: { ssh?: SshConfig } = {}) 
     config.hostname = hostname
   }
 
-  const $ = ssh(addr(config), options.ssh)
+  const $ = ssh(config)
   const host = new Proxy(config, {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
@@ -76,12 +74,12 @@ export function createHost(hostname: string, options: { ssh?: SshConfig } = {}) 
         throw new Error(`Property "${prop.toString()}" is not defined`)
       }
       if (typeof value === 'function') {
-        value = await value({host, $})
+        value = await value({host, $, config})
         // @ts-ignore
         host[prop.toString()] = value
       }
       return value
     },
   }) as any as Host
-  return {host, $}
+  return {host, $, config}
 }
