@@ -14,6 +14,8 @@ jobs:
         with:
           node-version: 18
           registry-url: 'https://registry.npmjs.org'
+      - run: npm i
+      - run: npm run build
       - run: npm version $(node --eval="process.stdout.write(require('./package.json').version)")-dev.$(git rev-parse --short HEAD) --no-git-tag-version
       - run: npm publish --no-git-tag-version --tag dev
         env:
