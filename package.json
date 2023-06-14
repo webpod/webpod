@@ -7,6 +7,9 @@
   "bin": {
     "webpod": "dist/src/cli.js"
   },
+  "files": [
+    "dist/src"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "npm run build && cd test && docker compose up --exit-code-from=webpod",

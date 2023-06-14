@@ -15,8 +15,11 @@ await async function main() {
     hostname = remoteUserAndHostname
     if (hostname.endsWith('.compute.amazonaws.com')) {
       remoteUser = 'ubuntu'
-      become = 'root'
     }
+  }
+
+  if (hostname.endsWith('.compute.amazonaws.com') && remoteUser == 'ubuntu') {
+    become = 'root'
   }
 
   const context = createHost({
