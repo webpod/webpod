@@ -31,7 +31,6 @@ await async function main() {
     remoteUser,
     hostname,
     become,
-    deployPath: '/home/webpod/demo',
     ...argv,
   })
   await runTask('provision', context)

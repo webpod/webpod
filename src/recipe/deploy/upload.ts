@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import {task} from '../../task.js'
 import {addr, escapeshellarg, exec, readDir} from '../../utils.js'
 import path from 'node:path'
@@ -5,7 +6,7 @@ import {spawn} from 'node:child_process'
 import {sshArgs} from '../../ssh.js'
 
 task('deploy:upload', async ({host, $, config}) => {
-  let dirToUpload = '/Users/anton/dev/webpod.dev/build'
+  let dirToUpload = getBuildDir()
   dirToUpload = path.resolve(dirToUpload) + '/'
 
   if (exec.rsync('-h').status !== 0) {
@@ -55,4 +56,20 @@ async function rsync(args: string[]) {
       }
     })
   })
+}
+
+function getBuildDir() {
+  const dirs = [
+    'dist',
+    'build',
+  ]
+
+  for (const dir of dirs) {
+    const dirPath = path.join(process.cwd(), dir)
+    if (fs.existsSync(dirPath)) {
+      return path.resolve(dirPath) + '/'
+    }
+  }
+
+  return path.resolve('.') + '/'
 }

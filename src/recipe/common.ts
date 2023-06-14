@@ -9,3 +9,4 @@ defaults.verbose = false
 defaults.publicDir = '.'
 defaults.nodeVersion = '18'
 defaults.domain = async ({host}) => (await host.hostname)!
+defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`
