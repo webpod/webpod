@@ -1,13 +1,18 @@
+#!/usr/bin/env node
+
 import process from 'node:process'
 import chalk from 'chalk'
+import minimist from 'minimist'
 import {createHost} from './host.js'
 import {runTask} from './task.js'
-import './recipe/provision/index.js'
-import './recipe/deploy/index.js'
 import {Response} from './ssh.js'
 
+import './recipe/common.js'
+
 await async function main() {
-  const remoteUserAndHostname = process.argv[2]
+  const argv = minimist(process.argv.slice(2))
+
+  const remoteUserAndHostname = argv._[0]
   let remoteUser, hostname, become
   if (remoteUserAndHostname.includes('@')) {
     [remoteUser, hostname] = remoteUserAndHostname.split('@', 2)
@@ -27,8 +32,10 @@ await async function main() {
     hostname,
     become,
     deployPath: '/home/webpod/demo',
+    ...argv,
   })
   await runTask('provision', context)
+  context.config.become = 'webpod'
   await runTask('deploy', context)
 
 }().catch(handleError)

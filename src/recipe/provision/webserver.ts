@@ -1,8 +1,5 @@
 import {task} from '../../task.js'
-import {defaults} from '../../host.js'
 import {str} from '../../utils.js'
-
-defaults.publicDir = async () => 'public'
 
 task('provision:webserver', async ({host, $: root$}) => {
   const $ = root$.with({become: 'webpod'})

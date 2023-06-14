@@ -34,7 +34,7 @@ export type Host = {
 }
 
 export const defaults: {
-  [key in keyof Partial<Config>]: Callback<Config[key]>
+  [key in keyof Partial<Config>]: Callback<Config[key]> | Config[key]
 } = {}
 
 export type Callback<T> = (context: Context) => Promise<T>
@@ -58,14 +58,14 @@ export function createHost(config: Partial<Config>): Context {
     async get(target, prop) {
       let value = Reflect.get(target, prop)
       if (typeof value === 'undefined') {
+        if (!(prop.toString() in defaults)) {
+          throw new Error(`Property "${prop.toString()}" is not defined.`)
+        }
         // @ts-ignore
         value = defaults[prop.toString()]
-      }
-      if (typeof value === 'undefined') {
-        throw new Error(`Property "${prop.toString()}" is not defined`)
-      }
-      if (typeof value === 'function') {
-        value = await value({host, $, config})
+        if (typeof value === 'function') {
+          value = await value({host, $, config})
+        }
         // @ts-ignore
         host[prop.toString()] = value
       }

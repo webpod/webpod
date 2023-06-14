@@ -16,7 +16,9 @@
     "uvu": "uvu -i .ts"
   },
   "dependencies": {
-    "chalk": "^5.2.0"
+    "@types/minimist": "^1.2.2",
+    "chalk": "^5.2.0",
+    "minimist": "^1.2.8"
   },
   "devDependencies": {
     "@types/node": "^20.2.4",
