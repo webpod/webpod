@@ -18,12 +18,13 @@ defaults.publicDir = async () => {
 }
 defaults.nodeVersion = '18'
 defaults.domain = async ({host}) => {
-  const answers = await inquirer.prompt({
-    name: 'domain',
-    type: 'input',
-    message: 'Domain name:',
-    default: await host.hostname,
-  })
-  return answers.domain
+  // const answers = await inquirer.prompt({
+  //   name: 'domain',
+  //   type: 'input',
+  //   message: 'Domain name:',
+  //   default: await host.hostname,
+  // })
+  // return answers.domain
+  return await host.hostname
 }
 defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`

@@ -14,7 +14,6 @@ export type RemoteShell = {
   check(): boolean
   test(pieces: TemplateStringsArray, ...values: Values): Promise<boolean>;
   cd(path: string): void
-  upload(local: string, remote: string): Promise<Response>
 }
 
 export type SshConfig = {
@@ -129,58 +128,6 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
   }
   $.cd = (path) => {
     config.cwd = path
-  }
-  $.upload = (local, remote) => {
-    const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
-    const debug = process.env['WEBPOD_DEBUG'] ?? ''
-
-    let resolve: (out: Response) => void, reject: (out: Response) => void
-    const promise = new Promise<Response>((...args) => ([resolve, reject] = args))
-
-    const args = sshArgs(config)
-    const cmd = workingDir(config.cwd) + `zcat > ${escapeshellarg(remote)}`
-    if (config.become) {
-      args.push(`sudo -H -u ${escapeshellarg(config.become)}`)
-    }
-    args.push(`bash -c ${escapeshellarg(cmd)}`)
-
-    if (debug !== '') {
-      if (debug.includes('ssh')) args.unshift('-vvv')
-      console.error('ssh', args.map(escapeshellarg).join(' '), '<', local)
-    }
-    if (config.verbose) {
-      console.error('$', cmd)
-    }
-
-    const child = spawn('ssh', args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    })
-    let stdout = '', stderr = ''
-    child.stdout.on('data', data => {
-      stdout += data
-    })
-    child.stderr.on('data', data => {
-      if (config.verbose) {
-        process.stderr.write(data)
-      }
-      stderr += data
-    })
-    child.on('close', (code) => {
-      if (code === 0 || config.nothrow)
-        resolve(new Response(cmd, location, code, stdout, stderr))
-      else
-        reject(new Response(cmd, location, code, stdout, stderr))
-    })
-    child.on('error', err => {
-      reject(new Response(cmd, location, null, stdout, stderr, err))
-    })
-
-    const gzip = createGzip()
-    const source = fs.createReadStream(local)
-    source.pipe(gzip).pipe(child.stdin)
-
-    return promise
   }
   return $
 }
