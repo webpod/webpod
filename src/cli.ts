@@ -8,9 +8,16 @@ import {runTask} from './task.js'
 import {Response} from './ssh.js'
 
 import './recipe/common.js'
+import {exec} from './utils.js'
 
 await async function main() {
-  const argv = minimist(process.argv.slice(2))
+  const argv = minimist(process.argv.slice(2), {
+    boolean: ['verbose', 'multiplexing'],
+    default: {
+      verbose: false,
+      multiplexing: !exec.ssh('-V').includes('_for_Windows'),
+    }
+  })
 
   const remoteUserAndHostname = argv._[0]
   let remoteUser, hostname, become
@@ -22,7 +29,6 @@ await async function main() {
       remoteUser = 'ubuntu'
     }
   }
-
   if (hostname.endsWith('.compute.amazonaws.com') && remoteUser == 'ubuntu') {
     become = 'root'
   }

@@ -3,12 +3,13 @@ import process from 'node:process'
 import {createGzip} from 'node:zlib'
 import fs from 'node:fs'
 import {addr, controlPath, escapeshellarg} from './utils.js'
+import chalk from 'chalk'
 
 type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
 
 export type RemoteShell = {
   (pieces: TemplateStringsArray, ...values: Values): Promise<Response>
-  with(config: SshConfig): RemoteShell
+  with(config: Partial<SshConfig>): RemoteShell
   exit(): void
   check(): boolean
   test(pieces: TemplateStringsArray, ...values: Values): Promise<boolean>;
@@ -17,21 +18,34 @@ export type RemoteShell = {
 }
 
 export type SshConfig = {
-  remoteUser?: string
-  hostname?: string
+  remoteUser: string
+  hostname: string
   port?: number | string
-  forwardAgent?: boolean
-  shell?: string
-  prefix?: string
+  shell: string
+  prefix: string
   cwd?: string
-  nothrow?: boolean
-  multiplexing?: boolean
-  verbose?: boolean
+  nothrow: boolean
+  multiplexing: boolean
+  verbose: boolean
   become?: string
-  options?: SshOptions
+  ssh: SshOptions
 }
 
-export function ssh(config: SshConfig): RemoteShell {
+export function ssh(partial: Partial<SshConfig>): RemoteShell {
+  const config: SshConfig = {
+    remoteUser: partial.remoteUser ?? 'root',
+    hostname: partial.hostname ?? 'localhost',
+    port: partial.port,
+    shell: partial.shell ?? 'bash -s',
+    prefix: partial.prefix ?? 'set -euo pipefail; ',
+    cwd: partial.cwd,
+    nothrow: partial.nothrow ?? false,
+    multiplexing: partial.multiplexing ?? true,
+    verbose: partial.verbose ?? false,
+    become: partial.become,
+    ssh: partial.ssh ?? {},
+  }
+
   const $ = async function (pieces, ...values) {
     const location = new Error().stack!.split(/^\s*at\s/m)[2].trim()
     const debug = process.env['WEBPOD_DEBUG'] ?? ''
@@ -48,18 +62,17 @@ export function ssh(config: SshConfig): RemoteShell {
     args.push(
       `: ${id}; ` +
       (config.become ? `sudo -H -u ${escapeshellarg(config.become)} ` : '') +
-      (config.shell ?? 'bash -ls')
+      config.shell
     )
 
-    const cmdPrefix = config.prefix ?? 'set -euo pipefail; '
     const cmd = workingDir(config.cwd) + await composeCmd(pieces, values)
 
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
-      console.error('ssh', args.map(escapeshellarg).join(' '), '<<<', escapeshellarg(cmdPrefix + cmd))
+      console.error(chalk.grey(`ssh ${args.map(escapeshellarg).join(' ')} <<< ${escapeshellarg(config.prefix + cmd)}`))
     }
     if (config.verbose) {
-      console.error('$', cmd)
+      console.error(chalk.green.bold('$ ' + cmd))
     }
 
     const child = spawn('ssh', args, {
@@ -68,9 +81,7 @@ export function ssh(config: SshConfig): RemoteShell {
     })
     let stdout = '', stderr = ''
     child.stdout.on('data', data => {
-      if (config.verbose) {
-        process.stdout.write(data)
-      }
+      if (config.verbose) process.stdout.write(data)
       stdout += data
     })
     child.stderr.on('data', data => {
@@ -78,9 +89,7 @@ export function ssh(config: SshConfig): RemoteShell {
         process.stderr.write(data)
         return
       }
-      if (config.verbose) {
-        process.stderr.write(data)
-      }
+      if (config.verbose) process.stderr.write(data)
       stderr += data
     })
     child.on('close', (code) => {
@@ -93,14 +102,14 @@ export function ssh(config: SshConfig): RemoteShell {
       reject(new Response(cmd, location, null, stdout, stderr, err))
     })
 
-    child.stdin.write(cmdPrefix + cmd)
+    child.stdin.write(config.prefix + cmd)
     child.stdin.end()
 
     return promise
   } as RemoteShell
   $.with = (override) => ssh({
     ...config, ...override,
-    options: {...config.options, ...override.options}
+    ssh: {...config.ssh, ...override.ssh ?? {}}
   })
   $.exit = () => spawnSync('ssh', [addr(config),
     '-o', `ControlPath=${controlPath(addr(config))}`,
@@ -176,27 +185,23 @@ export function ssh(config: SshConfig): RemoteShell {
   return $
 }
 
-export function sshArgs(config: SshConfig): string[] {
+export function sshArgs(config: Partial<SshConfig>): string[] {
   let options: SshOptions = {
     ControlMaster: 'auto',
     ControlPath: controlPath(addr(config)),
     ControlPersist: '5m',
     ConnectTimeout: '5s',
-    ForwardAgent: 'yes',
     StrictHostKeyChecking: 'accept-new',
   }
   if (config.port != undefined) {
     options.Port = config.port.toString()
   }
-  if (config.forwardAgent != undefined) {
-    options.ForwardAgent = config.forwardAgent ? 'yes' : 'no'
-  }
   if (config.multiplexing === false) {
-    options.ControlMaster = 'no'
-    options.ControlPath = 'none'
-    options.ControlPersist = 'no'
+    delete options.ControlMaster
+    delete options.ControlPath
+    delete options.ControlPersist
   }
-  options = {...options, ...config.options}
+  options = {...options, ...config.ssh}
   return [
     addr(config),
     ...Object.entries(options).flatMap(

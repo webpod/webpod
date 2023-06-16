@@ -50,10 +50,9 @@ test('other options', wrap(async () => {
   const $ = ssh({
     remoteUser: 'root',
     hostname: 'example.com',
-    forwardAgent: false,
     multiplexing: false,
     port: 22,
-    options: {
+    ssh: {
       RequestTTY: 'no',
     }
   })
