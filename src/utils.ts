@@ -93,3 +93,23 @@ export function readDir(rootPath: string, dirPath = rootPath) {
   }
   return filesList
 }
+
+export function readingTimeInSeconds(text: string): number {
+  const wordsPerMinute = 200
+  const wordsPerSecond = wordsPerMinute / 60
+  const words = text.split(' ')
+  const seconds = words.length / wordsPerSecond
+  return Math.round(seconds)
+}
+
+export function secondsToHumanReadableFormat(seconds: number): string {
+  const min = Math.floor(seconds / 60)
+  const sec = Math.floor(seconds % 60)
+  let s = ''
+  if (min > 0) {
+    s += `${min}m `
+  }
+  s += `${sec}s`
+  return s
+}
+

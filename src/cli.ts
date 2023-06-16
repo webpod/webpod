@@ -4,11 +4,11 @@ import process from 'node:process'
 import chalk from 'chalk'
 import minimist from 'minimist'
 import {createHost} from './host.js'
-import {runTask} from './task.js'
+import {currentlyRunningTask, runTask} from './task.js'
 import {Response} from './ssh.js'
 
 import './recipe/common.js'
-import {exec} from './utils.js'
+import {exec, readingTimeInSeconds, secondsToHumanReadableFormat} from './utils.js'
 
 await async function main() {
   const argv = minimist(process.argv.slice(2), {
@@ -39,9 +39,31 @@ await async function main() {
     become,
     ...argv,
   })
-  await runTask('provision', context)
-  context.config.become = 'webpod'
-  await runTask('deploy', context)
+
+  await context.host.domain
+
+  let spinner: NodeJS.Timer | undefined
+  if (!context.config.verbose) {
+    let s = 0
+    let startedAt = new Date()
+    const spin = () => {
+      const time = secondsToHumanReadableFormat((new Date().getTime() - startedAt.getTime()) / 1000)
+      const display = `  ${'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[s++ % 10]} ${time} :: ${currentlyRunningTask}`
+      process.stderr.write(`${display}${' '.repeat(process.stderr.columns - 1 - display.length)}\r`)
+    }
+    spinner = setInterval(spin, 100)
+  }
+
+  try {
+    await runTask('provision', context)
+    context.config.become = 'webpod'
+    await runTask('deploy', context)
+  } finally {
+    if (spinner) {
+      clearInterval(spinner)
+      process.stderr.write(' '.repeat(process.stderr.columns - 1) + '\r')
+    }
+  }
 
 }().catch(handleError)
 

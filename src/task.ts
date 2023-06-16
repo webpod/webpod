@@ -31,6 +31,8 @@ export function task(name: string, callback: Callback<void> | string[]): Task {
   return task
 }
 
+export let currentlyRunningTask: string
+
 export async function runTask(taskName: string, context: Context) {
   const task = allTasks.get(taskName)
   if (!task) {
@@ -45,5 +47,6 @@ export async function runTask(taskName: string, context: Context) {
   if (!task.callback) {
     throw new Error(`Task "${taskName}" has no callback.`)
   }
+  currentlyRunningTask = taskName
   await task.callback(context)
 }
