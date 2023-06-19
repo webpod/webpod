@@ -31,6 +31,23 @@ export type Config = SshConfig & {
   nodePath: string
   fnmPath: string
   scripts: string[]
+  apps: App[]
+  caddyfile: string
+  static: boolean
+}
+
+export type App = {
+  name: string
+  script: string
+  args: string
+  cwd: string
+  interpreter: string
+  instances: 'max' | number
+  exec_mode: 'cluster'
+  env: {
+    PORT: string
+    [key: string]: string
+  },
 }
 
 export type Host = {

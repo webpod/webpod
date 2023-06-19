@@ -21,7 +21,12 @@ await async function main() {
     process.exit(1)
   }
   const argv = minimist(process.argv.slice(2), {
-    boolean: ['verbose', 'multiplexing', 'yes'],
+    boolean: [
+      'yes',
+      'verbose',
+      'multiplexing',
+      'static',
+    ],
     string: ['scripts'],
     alias: {
       yes: 'y',

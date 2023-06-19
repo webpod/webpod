@@ -1,5 +1,5 @@
 import {task} from '../../task.js'
-import './app.js'
+import './apps.js'
 import './caddy.js'
 import './check.js'
 import './firewall.js'
@@ -21,5 +21,5 @@ task('provision', [
   'provision:user',
   'provision:node',
   'provision:webserver',
-  'provision:app',
+  'provision:apps',
 ])
