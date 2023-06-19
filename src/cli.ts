@@ -48,7 +48,9 @@ await async function main() {
     ...argv,
   })
 
-  //await context.host.domain
+  await context.host.domain
+  await context.host.buildDir
+  await context.host.publicDir
 
   let spinner: NodeJS.Timer | undefined
   if (!context.config.verbose) {

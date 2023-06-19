@@ -6,7 +6,7 @@ import {spawn} from 'node:child_process'
 import {sshArgs} from '../../ssh.js'
 
 task('deploy:upload', async ({host, $, config}) => {
-  const dirToUpload = path.resolve(getBuildDir())
+  const dirToUpload = path.resolve(await host.buildDir)
   if (exec.rsync('-h').status !== 0) {
     const args = [
       '-r',
@@ -53,20 +53,4 @@ async function run(bin: string, args: string[]) {
       }
     })
   })
-}
-
-function getBuildDir() {
-  const dirs = [
-    'dist',
-    'build',
-  ]
-
-  for (const dir of dirs) {
-    const dirPath = path.join(process.cwd(), dir)
-    if (fs.existsSync(dirPath)) {
-      return path.resolve(dirPath) + '/'
-    }
-  }
-
-  return path.resolve('.') + '/'
 }

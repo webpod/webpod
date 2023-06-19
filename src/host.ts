@@ -3,6 +3,7 @@ import {RemoteShell, ssh, SshConfig as SshConfig} from './ssh.js'
 export type Config = SshConfig & {
   [key: `str:${string}`]: string
   binSymlink: string[]
+  buildDir: string
   cleanupUseSudo: boolean
   currentPath: string
   defaultTimeout: string
