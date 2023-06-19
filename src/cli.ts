@@ -3,13 +3,16 @@
 import process from 'node:process'
 import chalk from 'chalk'
 import minimist from 'minimist'
-import {createHost} from './host.js'
+import {Context, createHost} from './host.js'
 import {runTask} from './task.js'
 import {Response} from './ssh.js'
 import './recipe/common.js'
 import {exec, humanPath} from './utils.js'
 import {startSpinner, stopSpinner} from './spinner.js'
 import {ask, confirm, skipPrompts} from './prompt.js'
+import fs from 'node:fs'
+
+const {cyan} = chalk
 
 await async function main() {
   console.log(chalk.bold('Welcome to Webpod'))
@@ -34,6 +37,7 @@ await async function main() {
     default: {
       verbose: false,
       multiplexing: process.platform != 'win32',
+      static: true, // TODO: This overrides the `defaults.static = true` in src/recipe/common.ts
     }
   })
   skipPrompts(argv.yes)
@@ -50,7 +54,7 @@ await async function main() {
   if (!task) {
     task = 'provision-and-deploy'
   }
-  if (!Array.isArray(argv.scripts)) {
+  if (argv.scripts && !Array.isArray(argv.scripts)) {
     argv.scripts = [argv.scripts]
   }
 
@@ -62,18 +66,23 @@ await async function main() {
   })
 
   do {
+    const framework = detectFramework()
+    await setupFramework(framework, context)
+
     await context.host.domain
     await context.host.uploadDir
     await context.host.publicDir
-    await context.host.scripts
 
-    const c = chalk.cyan
-    console.log(`Uploading ${c(humanPath(await context.host.uploadDir))} to ${c(await context.host.remoteUser + '@' + await context.host.hostname)}`)
-    if (await context.host.static) {
-      console.log(`Serving ${c(humanPath(await context.host.uploadDir, await context.host.publicDir))} at ${c('https://' + await context.host.domain)}`)
-    }
-    for (const script of await context.host.scripts) {
-      console.log(`Running ${c(humanPath(await context.host.uploadDir, script))}`)
+    if (framework == 'next') {
+      console.log(`${cyan('Next.js')} detected`)
+    } else {
+      console.log(`Uploading ${cyan(humanPath(await context.host.uploadDir))} to ${cyan(await context.host.remoteUser + '@' + await context.host.hostname)}`)
+      if (await context.host.static) {
+        console.log(`Serving ${cyan(humanPath(await context.host.uploadDir, await context.host.publicDir))} at ${cyan('https://' + await context.host.domain)}`)
+      }
+      for (const script of await context.host.scripts) {
+        console.log(`Running ${cyan(humanPath(await context.host.uploadDir, script))}`)
+      }
     }
 
     if (await confirm(`Correct?`)) {
@@ -96,6 +105,27 @@ await async function main() {
   console.log(`${chalk.green('Done!')} ${chalk.cyan('https://' + await context.host.domain)} 🎉`)
 
 }().catch(handleError)
+
+async function setupFramework(framework: string | undefined, context: Context) {
+  if (!framework) return
+  if (framework == 'next') {
+    context.config.uploadDir = '.'
+    context.config.publicDir = '.'
+    context.config.static = false
+    context.config.scripts = ['node_modules/.bin/next start']
+  }
+}
+
+function detectFramework(): string | undefined {
+  try {
+    if (fs.existsSync('package.json')) {
+      const packages = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+      if (packages.dependencies['next']) return 'next'
+    }
+  } catch (err) {
+    // Ignore
+  }
+}
 
 function handleError(error: any) {
   if (error instanceof Response) {

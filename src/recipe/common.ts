@@ -62,15 +62,4 @@ defaults.domain = async ({host}) => {
   return ask('Domain:', hostname)
 }
 
-defaults.scripts = async ({host}) => {
-  const uploadDir = path.resolve(await host.uploadDir)
-  do {
-    const app = await ask('Node server:')
-    const [script,] = app.split(' ', 2)
-    if (!fs.existsSync(path.join(uploadDir, script))) {
-      console.error(`File not found: ${humanPath(uploadDir, script)}`)
-      continue
-    }
-    return [app]
-  } while (true)
-}
+defaults.scripts = []
