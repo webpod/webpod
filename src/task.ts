@@ -52,5 +52,6 @@ export async function runTask(taskName: string, context: Context) {
   if (context.config.verbose) {
     console.log(chalk.bold('task') + ' ' + chalk.cyan(taskName))
   }
+  context.$.cd('')
   await task.callback(context)
 }

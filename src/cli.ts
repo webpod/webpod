@@ -67,7 +67,12 @@ await async function main() {
 
     const c = chalk.cyan
     console.log(`Uploading ${c(humanPath(await context.host.uploadDir))} to ${c(await context.host.remoteUser + '@' + await context.host.hostname)}`)
-    console.log(`Serving ${c(humanPath(await context.host.uploadDir, await context.host.publicDir))} at ${c('https://' + await context.host.domain)}`)
+    if (await context.host.static) {
+      console.log(`Serving ${c(humanPath(await context.host.uploadDir, await context.host.publicDir))} at ${c('https://' + await context.host.domain)}`)
+    }
+    for (const script of await context.host.scripts) {
+      console.log(`Running ${c(humanPath(await context.host.uploadDir, script))}`)
+    }
 
     if (await confirm(`Correct?`)) {
       break

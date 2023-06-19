@@ -67,14 +67,15 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
       config.shell
     )
 
-    const cmd = workingDir(config.cwd) + await composeCmd(pieces, values)
+    const cmd = await composeCmd(pieces, values)
+    const cmdFull = config.prefix + workingDir(config.cwd) + cmd
 
     if (debug !== '') {
       if (debug.includes('ssh')) args.unshift('-vvv')
-      console.error(chalk.grey(`ssh ${args.map(escapeshellarg).join(' ')} <<< ${escapeshellarg(config.prefix + cmd)}`))
+      console.error(chalk.grey(`ssh ${args.map(escapeshellarg).join(' ')} <<< ${escapeshellarg(cmdFull)}`))
     }
     if (config.verbose) {
-      console.error(chalk.green.bold('$ ' + cmd))
+      console.error(`${chalk.green.bold(`${config.become ?? config.remoteUser}@${config.hostname}`)}${chalk.magenta.bold(`:${config.cwd ?? ''}`)}${chalk.bold.blue(`$`)} ${chalk.bold(cmd)}`)
     }
 
     const child = spawn('ssh', args, {
@@ -104,7 +105,7 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
       reject(new Response(cmd, location, null, stdout, stderr, err))
     })
 
-    child.stdin.write(config.prefix + cmd)
+    child.stdin.write(cmdFull)
     child.stdin.end()
 
     return promise
