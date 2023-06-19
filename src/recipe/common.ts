@@ -1,25 +1,34 @@
-import inquirer from 'inquirer'
 import {defaults} from '../host.js'
 
 import './deploy/index.js'
 import './provision/index.js'
 import path from 'node:path'
 import fs from 'node:fs'
+import {ask} from '../prompt.js'
 
 defaults.remoteUser = 'root'
 defaults.become = undefined
 defaults.verbose = false
-defaults.publicDir = async () => {
-  const answers = await inquirer.prompt({
-    name: 'publicDir',
-    type: 'input',
-    message: 'Public directory:',
-    default: '.',
-  })
-  return answers.publicDir
+defaults.publicDir = async ({host}) => {
+  const uploadDir = path.resolve(await host.uploadDir)
+  let publicDir = '.'
+  const dirs = [
+    '.',
+    'public',
+    'static',
+  ]
+  for (const dir of dirs) {
+    const dirPath = path.join(uploadDir, dir, 'index.html')
+    if (fs.existsSync(dirPath)) {
+      publicDir = dir
+      break
+    }
+  }
+
+  return ask('Public directory:', publicDir)
 }
-defaults.buildDir = async () => {
-  let defaultDir = '.'
+defaults.uploadDir = async () => {
+  let uploadDir = '.'
   const dirs = [
     'dist',
     'build',
@@ -27,27 +36,15 @@ defaults.buildDir = async () => {
   for (const dir of dirs) {
     const dirPath = path.join(process.cwd(), dir)
     if (fs.existsSync(dirPath)) {
-      defaultDir = dir
+      uploadDir = dir
+      break
     }
   }
 
-  const answers = await inquirer.prompt({
-    name: 'text',
-    type: 'input',
-    message: 'Build directory ("dist", "build") to upload:',
-    default: defaultDir,
-  })
-  return answers.text
+  return ask('Upload directory:', uploadDir)
 }
 defaults.nodeVersion = '18'
 defaults.domain = async ({host}) => {
-  // const answers = await inquirer.prompt({
-  //   name: 'domain',
-  //   type: 'input',
-  //   message: 'Domain name:',
-  //   default: await host.hostname,
-  // })
-  // return answers.domain
-  return await host.hostname
+  return ask('Domain:', await host.hostname)
 }
 defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`

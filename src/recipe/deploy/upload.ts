@@ -6,7 +6,7 @@ import {spawn} from 'node:child_process'
 import {sshArgs} from '../../ssh.js'
 
 task('deploy:upload', async ({host, $, config}) => {
-  const dirToUpload = path.resolve(await host.buildDir)
+  const dirToUpload = path.resolve(await host.uploadDir)
   if (exec.rsync('-h').status !== 0) {
     const args = [
       '-r',
