@@ -28,6 +28,8 @@ export type Config = SshConfig & {
   useAtomicSymlink: boolean
   useRelativeSymlink: boolean
   userStartedDeploy: string
+  nodePath: string
+  fnmPath: string
 }
 
 export type Host = {

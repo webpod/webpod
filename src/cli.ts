@@ -9,26 +9,28 @@ import {Response} from './ssh.js'
 import './recipe/common.js'
 import {exec, humanPath} from './utils.js'
 import {startSpinner, stopSpinner} from './spinner.js'
-import {ask, confirm} from './prompt.js'
-import path from 'node:path'
+import {ask, confirm, skipPrompts} from './prompt.js'
 
 await async function main() {
+  console.log(chalk.bold('Welcome to Webpod'))
+  console.log(chalk.gray('+++++++++++++++++'))
+
   const sshV = exec.ssh('-V')
   if (sshV.status != 0) {
     console.error(`Error: ssh is not installed.`)
     process.exit(1)
   }
-
   const argv = minimist(process.argv.slice(2), {
-    boolean: ['verbose', 'multiplexing'],
+    boolean: ['verbose', 'multiplexing', 'yes'],
+    alias: {
+      yes: 'y',
+    },
     default: {
       verbose: false,
       multiplexing: process.platform != 'win32',
     }
   })
-
-  console.log(chalk.bold('Welcome to Webpod'))
-  console.log(chalk.gray('+++++++++++++++++'))
+  skipPrompts(argv.yes)
 
   let remoteUser, hostname, become
   if (argv._.length == 1) {
@@ -110,6 +112,9 @@ function parseHost(remoteUserAndHostname: string) {
   }
   if (!remoteUser) {
     remoteUser = 'root'
+  }
+  if (remoteUser != 'root') {
+    become = 'root'
   }
   return {remoteUser, hostname, become}
 }

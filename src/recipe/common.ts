@@ -45,6 +45,10 @@ defaults.uploadDir = async () => {
 }
 defaults.nodeVersion = '18'
 defaults.domain = async ({host}) => {
-  return ask('Domain:', await host.hostname)
+  let hostname: string | undefined = await host.hostname
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    hostname = undefined
+  }
+  return ask('Domain:', hostname)
 }
 defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`

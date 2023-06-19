@@ -6,7 +6,6 @@ task('provision:webserver', async ({host, $: root$}) => {
   await $`[ -d ${host.deployPath} ] || mkdir ${host.deployPath}`
 
   const domain = await host.domain
-  const nodeVersion = await host.nodeVersion
   const deployPath = (await $`realpath ${host.deployPath}`).toString()
   const publicPath = str`${await host.deployPath}/current/${await host.publicDir}`
 

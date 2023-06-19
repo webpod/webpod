@@ -27,6 +27,7 @@ export type SshConfig = {
   multiplexing: boolean
   verbose: boolean
   become?: string
+  env: Record<string, string>
   ssh: SshOptions
 }
 
@@ -42,6 +43,7 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
     multiplexing: partial.multiplexing ?? true,
     verbose: partial.verbose ?? false,
     become: partial.become,
+    env: partial.env ?? {},
     ssh: partial.ssh ?? {},
   }
 
@@ -61,6 +63,7 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
     args.push(
       `: ${id}; ` +
       (config.become ? `sudo -H -u ${escapeshellarg(config.become)} ` : '') +
+      env(config.env) +
       config.shell
     )
 
@@ -162,6 +165,18 @@ function workingDir(cwd: string | undefined): string {
     return ``
   }
   return `cd ${escapeshellarg(cwd)}; `
+}
+
+function env(env: Record<string, string>): string {
+  return Object.entries(env)
+    .map(([key, value]) => {
+      if (key.endsWith('++')) {
+        return `${key.replace(/\++$/, '')}=$PATH:${escapeshellarg(value)} `
+      } else {
+        return `${key}=${escapeshellarg(value)} `
+      }
+    })
+    .join('')
 }
 
 export class Response extends String {

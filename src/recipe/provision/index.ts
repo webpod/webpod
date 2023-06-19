@@ -3,6 +3,8 @@ import './caddy.js'
 import './check.js'
 import './firewall.js'
 import './install.js'
+import './node.js'
+import './pm2.js'
 import './sshd.js'
 import './update.js'
 import './user.js'
@@ -17,5 +19,7 @@ task('provision', [
   'provision:caddy',
   'provision:ssh',
   'provision:user',
+  'provision:node',
   'provision:webserver',
+  'provision:pm2',
 ])
