@@ -136,4 +136,4 @@ task('deploy:release', async ({host, $}) => {
   if (releasesList.length > 2) {
     update(host, 'previousReleasePath', `${await host.deployPath}/releases/${releasesList.at(-2)}`)
   }
-})
+}).as('webpod')

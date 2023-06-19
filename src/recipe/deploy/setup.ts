@@ -16,4 +16,4 @@ task('deploy:setup', async ({host, $}) => {
       `Remove this directory so it can be replaced with a symlink for atomic deployments.`
     );
   }
-})
+}).as('webpod')

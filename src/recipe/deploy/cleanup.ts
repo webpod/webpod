@@ -16,4 +16,4 @@ task('deploy:cleanup', async ({$, host}) => {
       await $`${sudo} rm -rf ${await host.deployPath}/releases/${release}`
     }
   }
-})
+}).as('webpod')

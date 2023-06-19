@@ -69,4 +69,4 @@ task('deploy:shared', async ({$, host}) => {
     // Symlink shared dir to release dir
     await $`ln -s ${sharedPath}/${file} ${host.releasePath}/${file}`
   }
-})
+}).as('webpod')

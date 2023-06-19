@@ -36,7 +36,7 @@ task('deploy:upload', async ({host, $, config}) => {
     await run('rsync', args)
   }
   await $`ls ${await host.releasePath}`
-})
+}).as('webpod')
 
 async function run(bin: string, args: string[]) {
   const child = spawn(bin, args, {stdio: 'pipe'})

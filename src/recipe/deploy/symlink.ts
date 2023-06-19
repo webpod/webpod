@@ -15,4 +15,4 @@ task('deploy:symlink', async ({$, host}) => {
     await $`cd ${host.deployPath} && ln -sfn ${host.releasePath} ${host.currentPath}`
     await $`cd ${host.deployPath} && rm release`
   }
-})
+}).as('webpod')

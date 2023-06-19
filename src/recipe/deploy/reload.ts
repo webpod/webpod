@@ -5,4 +5,4 @@ task('deploy:reload', async ({host, $}) => {
   $.cd(await host.deployPath)
   await $`pm2 reload apps.config.js`
   await $`pm2 save`
-})
+}).as('webpod')

@@ -4,6 +4,7 @@ import chalk from 'chalk'
 export class Task {
   callback?: Callback<void>
   group?: string[]
+  become?: string
 
   constructor(
     public name: string,
@@ -14,6 +15,10 @@ export class Task {
       return
     }
     this.callback = callback
+  }
+
+  as(name: string) {
+    this.become = name
   }
 }
 
@@ -53,5 +58,9 @@ export async function runTask(taskName: string, context: Context) {
     console.log(chalk.bold('task') + ' ' + chalk.cyan(taskName))
   }
   context.$.cd('')
+  if (task.become && task.become != context.config.remoteUser) {
+    context.config.become = task.become
+    context.$ = context.$.with({become: task.become})
+  }
   await task.callback(context)
 }

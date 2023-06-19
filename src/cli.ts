@@ -47,7 +47,9 @@ await async function main() {
   } else if (argv._.length == 0) {
     ({remoteUser, hostname, become} = parseHost(await ask('Enter hostname: ')))
   }
-
+  if (!task) {
+    task = 'provision-and-deploy'
+  }
   if (!Array.isArray(argv.scripts)) {
     argv.scripts = [argv.scripts]
   }
@@ -85,17 +87,8 @@ await async function main() {
   } while (true)
 
   if (!context.config.verbose) startSpinner()
-
   try {
-
-    if (task)  {
-      await runTask(task, context)
-    } else {
-      await runTask('provision', context)
-      context.config.become = 'webpod'
-      context.$ = context.$.with({become: 'webpod'})
-      await runTask('deploy', context)
-    }
+    await runTask(task, context)
   } finally {
     stopSpinner()
   }

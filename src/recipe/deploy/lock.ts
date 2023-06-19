@@ -25,8 +25,8 @@ task('deploy:lock', async ({$, host}) => {
       `Deploy locked by ${lockedUser}. Execute "deploy:unlock" task to unlock.`
     )
   }
-})
+}).as('webpod')
 
 task('deploy:unlock', async ({$, host}) => {
   await $`rm -f ${await host.deployPath}/.webpod/deploy.lock`
-})
+}).as('webpod')

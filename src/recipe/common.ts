@@ -1,11 +1,16 @@
 import {defaults} from '../host.js'
-
-import './deploy/index.js'
-import './provision/index.js'
 import path from 'node:path'
 import fs from 'node:fs'
 import {ask} from '../prompt.js'
 import {humanPath} from '../utils.js'
+import './deploy/index.js'
+import './provision/index.js'
+import {task} from '../task.js'
+
+task('provision-and-deploy', [
+  'provision',
+  'deploy',
+]);
 
 defaults.remoteUser = 'root'
 defaults.become = undefined
