@@ -1,4 +1,5 @@
 import {Callback, Context} from './host.js'
+import chalk from 'chalk'
 
 export class Task {
   callback?: Callback<void>
@@ -48,5 +49,8 @@ export async function runTask(taskName: string, context: Context) {
     throw new Error(`Task "${taskName}" has no callback.`)
   }
   currentlyRunningTask = taskName
+  if (context.config.verbose) {
+    console.log(chalk.bold('task') + ' ' + chalk.cyan(taskName))
+  }
   await task.callback(context)
 }

@@ -1,10 +1,10 @@
 import {task} from '../../task.js'
+import './app.js'
 import './caddy.js'
 import './check.js'
 import './firewall.js'
 import './install.js'
 import './node.js'
-import './pm2.js'
 import './sshd.js'
 import './update.js'
 import './user.js'
@@ -21,5 +21,5 @@ task('provision', [
   'provision:user',
   'provision:node',
   'provision:webserver',
-  'provision:pm2',
+  'provision:app',
 ])

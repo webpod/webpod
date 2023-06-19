@@ -5,10 +5,14 @@ import './provision/index.js'
 import path from 'node:path'
 import fs from 'node:fs'
 import {ask} from '../prompt.js'
+import {humanPath} from '../utils.js'
 
 defaults.remoteUser = 'root'
 defaults.become = undefined
 defaults.verbose = false
+defaults.nodeVersion = '18'
+defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`
+
 defaults.publicDir = async ({host}) => {
   const uploadDir = path.resolve(await host.uploadDir)
   let publicDir = '.'
@@ -27,6 +31,7 @@ defaults.publicDir = async ({host}) => {
 
   return ask('Public directory:', publicDir)
 }
+
 defaults.uploadDir = async () => {
   let uploadDir = '.'
   const dirs = [
@@ -43,7 +48,7 @@ defaults.uploadDir = async () => {
 
   return ask('Upload directory:', uploadDir)
 }
-defaults.nodeVersion = '18'
+
 defaults.domain = async ({host}) => {
   let hostname: string | undefined = await host.hostname
   if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
@@ -51,4 +56,16 @@ defaults.domain = async ({host}) => {
   }
   return ask('Domain:', hostname)
 }
-defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`
+
+defaults.scripts = async ({host}) => {
+  const uploadDir = path.resolve(await host.uploadDir)
+  do {
+    const app = await ask('Node server:')
+    const [script,] = app.split(' ', 2)
+    if (!fs.existsSync(path.join(uploadDir, script))) {
+      console.error(`File not found: ${humanPath(uploadDir, script)}`)
+      continue
+    }
+    return [app]
+  } while (true)
+}

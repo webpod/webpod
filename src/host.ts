@@ -30,6 +30,7 @@ export type Config = SshConfig & {
   userStartedDeploy: string
   nodePath: string
   fnmPath: string
+  scripts: string[]
 }
 
 export type Host = {

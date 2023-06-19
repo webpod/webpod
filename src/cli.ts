@@ -22,6 +22,7 @@ await async function main() {
   }
   const argv = minimist(process.argv.slice(2), {
     boolean: ['verbose', 'multiplexing', 'yes'],
+    string: ['scripts'],
     alias: {
       yes: 'y',
     },
@@ -32,11 +33,18 @@ await async function main() {
   })
   skipPrompts(argv.yes)
 
-  let remoteUser, hostname, become
-  if (argv._.length == 1) {
+  let task, remoteUser, hostname, become
+  if (argv._.length == 2) {
+    task = argv._[0];
+    ({remoteUser, hostname, become} = parseHost(argv._[1]))
+  } else if (argv._.length == 1) {
     ({remoteUser, hostname, become} = parseHost(argv._[0]))
   } else if (argv._.length == 0) {
     ({remoteUser, hostname, become} = parseHost(await ask('Enter hostname: ')))
+  }
+
+  if (!Array.isArray(argv.scripts)) {
+    argv.scripts = [argv.scripts]
   }
 
   const context = createHost({
@@ -50,6 +58,7 @@ await async function main() {
     await context.host.domain
     await context.host.uploadDir
     await context.host.publicDir
+    await context.host.scripts
 
     const c = chalk.cyan
     console.log(`Uploading ${c(humanPath(await context.host.uploadDir))} to ${c(await context.host.remoteUser + '@' + await context.host.hostname)}`)
@@ -61,17 +70,22 @@ await async function main() {
       delete context.config.domain
       delete context.config.uploadDir
       delete context.config.publicDir
+      delete context.config.scripts
     }
   } while (true)
-
 
   if (!context.config.verbose) startSpinner()
 
   try {
-    await runTask('provision', context)
-    context.config.become = 'webpod'
-    context.$ = context.$.with({become: 'webpod'})
-    await runTask('deploy', context)
+
+    if (task)  {
+      await runTask(task, context)
+    } else {
+      await runTask('provision', context)
+      context.config.become = 'webpod'
+      context.$ = context.$.with({become: 'webpod'})
+      await runTask('deploy', context)
+    }
   } finally {
     stopSpinner()
   }
