@@ -1,6 +1,6 @@
 import {task} from '../../task.js'
 import fs from 'node:fs'
-import * as path from 'path'
+import path from 'node:path'
 import os from 'node:os'
 
 task('provision:ssh', async ({host, $}) => {
