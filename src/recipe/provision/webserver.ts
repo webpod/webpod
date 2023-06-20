@@ -3,12 +3,13 @@ import {str} from '../../utils.js'
 import {defaults} from '../../host.js'
 
 defaults.static = true
+defaults.fallback = ''
 defaults.caddyfile = async ({host}) => str`
 ${await host.domain} {
 ${await host.static ? str`
 \troot * ${await host.deployPath}/current/${await host.publicDir}
 \tencode gzip
-\ttry_files {path} {path}.html {path}/ =404
+\ttry_files {path} {path}.html {path}/ ${await host.fallback != '' ? '/' + (await host.fallback).replace(/^\//, '') : '=404'}
 \tfile_server
 \tlog {
 \t\toutput file ${await host.deployPath}/log/access.log

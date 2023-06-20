@@ -44,6 +44,13 @@ defaults.uploadDir = async () => {
     'dist',
     'build',
   ]
+
+  // Angular build to dist/<project-name>
+  const files = fs.readdirSync(path.join(process.cwd(), 'dist'))
+  if (files.length === 1 && fs.statSync(path.join(process.cwd(), 'dist', files[0])).isDirectory()) {
+    dirs.unshift(path.join('dist', files[0]))
+  }
+
   for (const dir of dirs) {
     const dirPath = path.join(process.cwd(), dir)
     if (fs.existsSync(dirPath)) {

@@ -120,14 +120,19 @@ async function setupFramework(framework: string | undefined, context: Context) {
     context.config.publicDir = '.'
     context.config.static = false
     context.config.scripts = ['node_modules/.bin/next start']
+  } else if (framework == 'angular') {
+    context.config.fallback = '/index.html'
   }
 }
 
-function detectFramework(): string | undefined {
+type Framework = 'next' | 'angular'
+
+function detectFramework(): Framework | undefined {
   try {
     if (fs.existsSync('package.json')) {
       const packages = JSON.parse(fs.readFileSync('package.json', 'utf8'))
       if (packages.dependencies['next']) return 'next'
+      if (packages.dependencies['@angular/core']) return 'angular'
     }
   } catch (err) {
     // Ignore
