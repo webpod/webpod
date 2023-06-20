@@ -116,4 +116,3 @@ export function secondsToHumanReadableFormat(seconds: number): string {
 export function humanPath(...parts: string[]): string {
   return path.resolve(path.join(...parts)).replace(os.homedir(), '~')
 }
-

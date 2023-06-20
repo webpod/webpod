@@ -1,6 +1,6 @@
-import {task} from '../../task.js'
+import path from 'node:path'
 import {defaults} from '../../host.js'
-import * as path from 'path'
+import {task} from '../../task.js'
 
 defaults.sharedDirs = async () => []
 defaults.sharedFiles = async () => []

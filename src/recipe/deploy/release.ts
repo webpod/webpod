@@ -63,7 +63,7 @@ defaults.releasePath = async ({$, host}) => {
   const releaseExists = await $.test`[ -h ${host.deployPath}/release ]`
   if (releaseExists) {
     const link = await $`readlink ${host.deployPath}/release`
-    return link[0] === '/' ? link.toString() : `${await host.deployPath}/${link}`
+    return link.startsWith('/') ? link.toString() : `${await host.deployPath}/${link}`
   } else {
     throw new Error(`The release path "(${await host.deployPath}/release)" does not exist.`)
   }
