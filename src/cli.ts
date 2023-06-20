@@ -9,14 +9,14 @@ import {Response} from './ssh.js'
 import './recipe/common.js'
 import {exec, humanPath} from './utils.js'
 import {startSpinner, stopSpinner} from './spinner.js'
-import {ask, confirm, skipPrompts} from './prompt.js'
+import {ask, choose, confirm, skipPrompts} from './prompt.js'
 import fs from 'node:fs'
 
-const {cyan} = chalk
+const {cyan, grey, green, bold} = chalk
 
 await async function main() {
-  console.log(chalk.bold('Welcome to Webpod'))
-  console.log(chalk.gray('+++++++++++++++++'))
+  console.log(bold('Welcome to Webpod'))
+  console.log(grey('+++++++++++++++++'))
 
   const sshV = exec.ssh('-V')
   if (sshV.status != 0) {
@@ -95,6 +95,13 @@ await async function main() {
     }
   } while (true)
 
+  const projectKind = await choose('Type of your project:', ['personal', 'business'])
+  if (projectKind == 'personal') {
+    console.log(`${green('!')} Webpod is free for personal projects and non-profit organizations.`)
+  } else if (projectKind == 'business') {
+    console.log(`${green('!')} Please, follow instructions at ${bold('https://webpod.dev/payment')}.`)
+  }
+
   if (!context.config.verbose) startSpinner()
   try {
     await runTask(task, context)
@@ -102,7 +109,7 @@ await async function main() {
     stopSpinner()
   }
 
-  console.log(`${chalk.green('Done!')} ${chalk.cyan('https://' + await context.host.domain)} 🎉`)
+  console.log(`${green('Done!')} ${cyan('https://' + await context.host.domain)} 🎉`)
 
 }().catch(handleError)
 

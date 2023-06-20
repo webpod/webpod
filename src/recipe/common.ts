@@ -6,6 +6,7 @@ import {humanPath} from '../utils.js'
 import './deploy/index.js'
 import './provision/index.js'
 import {task} from '../task.js'
+import chalk from 'chalk'
 
 task('provision-and-deploy', [
   'provision',
@@ -51,6 +52,7 @@ defaults.uploadDir = async () => {
     }
   }
 
+  console.log(`${chalk.green('!')} ${chalk.underline('Build your project before deploying.')}`)
   return ask('Upload directory:', uploadDir)
 }
 
@@ -59,7 +61,11 @@ defaults.domain = async ({host}) => {
   if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
     hostname = undefined
   }
-  return ask('Domain:', hostname)
+  let domain = hostname
+  do {
+    domain = await ask('Domain:', hostname)
+  } while (domain == '')
+  return domain
 }
 
 defaults.scripts = []

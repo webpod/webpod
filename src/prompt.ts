@@ -27,3 +27,15 @@ export async function confirm(message: string, defaultValue = true): Promise<boo
   })
   return answers.out
 }
+
+export async function choose(message: string, choices: string[]): Promise<string> {
+  if (skip) return ''
+  const answers = await inquirer.prompt({
+    name: 'out',
+    type: 'list',
+    message,
+    choices,
+    default: choices[0],
+  })
+  return answers.out
+}
