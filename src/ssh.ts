@@ -4,6 +4,7 @@ import {createGzip} from 'node:zlib'
 import fs from 'node:fs'
 import {addr, controlPath, escapeshellarg} from './utils.js'
 import chalk from 'chalk'
+import {progressMessage} from './spinner.js'
 
 type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
 
@@ -86,6 +87,7 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
     child.stdout.on('data', data => {
       if (config.verbose) process.stdout.write(data)
       stdout += data
+      progressMessage(data.toString())
     })
     child.stderr.on('data', data => {
       if (debug.includes('ssh') && /^debug\d:/.test(data)) {
@@ -94,6 +96,7 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
       }
       if (config.verbose) process.stderr.write(data)
       stderr += data
+      progressMessage(data.toString())
     })
     child.on('close', (code) => {
       if (code === 0 || config.nothrow)
