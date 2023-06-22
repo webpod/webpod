@@ -35,6 +35,7 @@ export type Config = SshConfig & {
   caddyfile: string
   static: boolean
   fallback: string
+  purpose: string
 }
 
 export type App = {
@@ -96,3 +97,26 @@ export function createHost(config: Partial<Config>): Context {
   }) as any as Host
   return {config, host, $}
 }
+
+export function parseHost(remoteUserAndHostname: string) {
+  let remoteUser, hostname, become
+  if (remoteUserAndHostname.includes('@')) {
+    [remoteUser, hostname] = remoteUserAndHostname.split('@', 2)
+  } else {
+    hostname = remoteUserAndHostname
+    if (hostname.endsWith('.compute.amazonaws.com')) {
+      remoteUser = 'ubuntu'
+    }
+  }
+  if (hostname.endsWith('.compute.amazonaws.com') && remoteUser == 'ubuntu') {
+    become = 'root'
+  }
+  if (!remoteUser) {
+    remoteUser = 'root'
+  }
+  if (remoteUser != 'root') {
+    become = 'root'
+  }
+  return {remoteUser, hostname, become}
+}
+

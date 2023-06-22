@@ -1,7 +1,7 @@
 import {defaults} from '../host.js'
 import path from 'node:path'
 import fs from 'node:fs'
-import {ask} from '../prompt.js'
+import {ask, choose} from '../prompt.js'
 import {humanPath} from '../utils.js'
 import './deploy/index.js'
 import './provision/index.js'
@@ -11,13 +11,14 @@ import chalk from 'chalk'
 task('provision-and-deploy', [
   'provision',
   'deploy',
-]);
+])
 
 defaults.remoteUser = 'root'
 defaults.become = undefined
 defaults.verbose = false
 defaults.nodeVersion = '18'
 defaults.deployPath = async ({host}) => `/home/webpod/${await host.domain}`
+defaults.scripts = []
 
 defaults.publicDir = async ({host}) => {
   const uploadDir = path.resolve(await host.uploadDir)
@@ -80,4 +81,12 @@ defaults.domain = async ({host}) => {
   return domain
 }
 
-defaults.scripts = []
+defaults.purpose = async () => {
+  const purpose = await choose('Type of your project:', ['personal', 'business'])
+  if (purpose == 'personal') {
+    console.log(`${chalk.green('!')} Webpod is free for personal projects and non-profit organizations.`)
+  } else if (purpose == 'business') {
+    console.log(`${chalk.green('!')} Please, follow instructions at ${chalk.bold('https://webpod.dev/payment')}.`)
+  }
+  return purpose
+}
