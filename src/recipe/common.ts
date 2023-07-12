@@ -80,13 +80,3 @@ defaults.domain = async ({host}) => {
   } while (domain == '')
   return domain
 }
-
-defaults.purpose = async () => {
-  const purpose = await choose('Type of your project:', ['personal', 'business'])
-  if (purpose == 'personal') {
-    console.log(`${chalk.green('!')} Webpod is free for personal projects and non-profit organizations.`)
-  } else if (purpose == 'business') {
-    console.log(`${chalk.green('!')} Please, follow instructions at ${chalk.bold('https://webpod.dev/payment')}.`)
-  }
-  return purpose
-}

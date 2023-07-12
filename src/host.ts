@@ -35,7 +35,6 @@ export type Config = SshConfig & {
   caddyfile: string
   static: boolean
   fallback: string
-  purpose: string
 }
 
 export type App = {

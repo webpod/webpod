@@ -94,7 +94,6 @@ await async function main() {
     await context.host.domain
     await context.host.uploadDir
     await context.host.publicDir
-    await context.host.purpose
 
     console.log(`Webpod now will configure your server with:`)
     console.log(` ${bold('✔')} Updates`)
@@ -123,7 +122,6 @@ await async function main() {
       delete context.config.uploadDir
       delete context.config.publicDir
       delete context.config.scripts
-      delete context.config.purpose
     }
   } while (true)
 
