@@ -12,6 +12,8 @@ import {ask, confirm, skipPrompts} from './prompt.js'
 import fs from 'node:fs'
 import {handleError, StopError} from './error.js'
 import {detectFramework, setupFramework} from './framework.js'
+import {login} from './api.js'
+import {loadUserConfig} from './env.js'
 
 const {cyan, grey, green, bold} = chalk
 
@@ -53,6 +55,9 @@ await async function main() {
     console.error(`Error: ssh is not installed.`)
     process.exit(1)
   }
+
+  await loadUserConfig()
+  await login()
 
   let task, remoteUser, hostname, become
   if (argv._.length == 2) {

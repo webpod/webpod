@@ -116,3 +116,11 @@ export function secondsToHumanReadableFormat(seconds: number): string {
 export function humanPath(...parts: string[]): string {
   return path.resolve(path.join(...parts)).replace(os.homedir(), '~')
 }
+
+export function randomString(): string {
+  return Math.random().toString(36).slice(2)
+}
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
