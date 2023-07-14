@@ -6,14 +6,28 @@ import chalk from 'chalk'
 let spinner: NodeJS.Timer | undefined
 let startedAt: Date
 let status = ''
+let disable = false
 
 export function progressMessage(message: string) {
   status = remoteNonAscii(getLastNonEmptyLine(message))
+  if (/investigate|error/i.test(status)) {
+    status = 'compiling...'
+  }
+}
+
+export function disableSpinner() {
+  disable = true
 }
 
 export function startSpinner() {
-  let s = 0
+  if (disable) return
   startedAt = new Date()
+  continueSpinner()
+}
+
+export function continueSpinner() {
+  if (disable) return
+  let s = 0
   const spin = () => {
     const time = secondsToHumanReadableFormat((new Date().getTime() - startedAt.getTime()) / 1000)
     const display = `  ${'⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[s++ % 10]} ${time} → ${currentlyRunningTask} `
@@ -24,6 +38,7 @@ export function startSpinner() {
 }
 
 export function stopSpinner() {
+  if (disable) return
   clearInterval(spinner)
   process.stderr.write(' '.repeat(process.stderr.columns - 1) + '\r')
 }

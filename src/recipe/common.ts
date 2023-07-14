@@ -1,14 +1,15 @@
 import {defaults} from '../host.js'
 import path from 'node:path'
 import fs from 'node:fs'
-import {ask, choose} from '../prompt.js'
-import {humanPath} from '../utils.js'
-import './deploy/index.js'
-import './provision/index.js'
+import {ask} from '../prompt.js'
 import {task} from '../task.js'
 import chalk from 'chalk'
+import './deploy/index.js'
+import './provision/index.js'
+import './prepare.js'
 
-task('provision-and-deploy', [
+task('default', [
+  'prepare',
   'provision',
   'deploy',
 ])

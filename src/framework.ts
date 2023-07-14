@@ -1,15 +1,15 @@
-import {Context} from './host.js'
+import {Config, Context} from './host.js'
 import fs from 'node:fs'
 
-export async function setupFramework(framework: string | undefined, context: Context) {
+export async function setupFramework(framework: string | undefined, config: Partial<Config>) {
   if (!framework) return
   if (framework == 'next') {
-    context.config.uploadDir = '.'
-    context.config.publicDir = '.'
-    context.config.static = false
-    context.config.scripts = ['node_modules/.bin/next start']
+    config.uploadDir = '.'
+    config.publicDir = '.'
+    config.static = false
+    config.scripts = ['node_modules/.bin/next start']
   } else if (framework == 'angular') {
-    context.config.fallback = '/index.html'
+    config.fallback = '/index.html'
   }
 }
 

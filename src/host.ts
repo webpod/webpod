@@ -113,9 +113,6 @@ export function parseHost(remoteUserAndHostname: string) {
   if (!remoteUser) {
     remoteUser = 'root'
   }
-  if (remoteUser != 'root') {
-    become = 'root'
-  }
   return {remoteUser, hostname, become}
 }
 
