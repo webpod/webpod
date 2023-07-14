@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "ES2021",
     "lib": [
-      "ES2021"
+      "ES2021",
+      "DOM"
     ],
     "allowJs": true,
     "module": "NodeNext",
