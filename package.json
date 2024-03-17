@@ -16,17 +16,17 @@
     "uvu": "uvu -i .ts"
   },
   "dependencies": {
-    "chalk": "^5.2.0",
+    "chalk": "^5.3.0",
     "indent-string": "^5.0.0",
-    "inquirer": "^9.2.7",
+    "inquirer": "^9.2.16",
     "minimist": "^1.2.8",
-    "node-fetch": "^3.3.1",
+    "node-fetch-native": "^1.6.2",
     "open": "^9.1.0"
   },
   "devDependencies": {
-    "@types/inquirer": "^9.0.3",
-    "@types/minimist": "^1.2.2",
-    "@types/node": "^20.2.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.11.28",
     "c8": "^7.14.0",
     "typescript": "^5.0.4",
     "uvu": "^0.5.6"

@@ -3,7 +3,7 @@ import {currentlyRunningTask} from './task.js'
 import process from 'node:process'
 import chalk from 'chalk'
 
-let spinner: NodeJS.Timer | undefined
+let spinner: NodeJS.Timeout | undefined
 let startedAt: Date
 let status = ''
 let disable = false
