@@ -13,23 +13,23 @@
   "scripts": {
     "build": "tsc",
     "test": "npm run build && cd test && docker compose up --exit-code-from=webpod",
-    "uvu": "uvu -i .ts"
+    "test:unit": "node ./dist/test/all.test.js",
+    "test:cov": "npx c8 --reporter=html -x test npm run test:unit"
   },
   "dependencies": {
     "chalk": "^5.3.0",
     "indent-string": "^5.0.0",
-    "inquirer": "^9.2.16",
+    "inquirer": "^9.2.22",
     "minimist": "^1.2.8",
-    "node-fetch-native": "^1.6.2",
+    "node-fetch-native": "^1.6.4",
     "open": "^9.1.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^20.11.28",
-    "c8": "^7.14.0",
-    "typescript": "^5.0.4",
-    "uvu": "^0.5.6"
+    "@types/node": "^20.12.12",
+    "c8": "^9.1.0",
+    "typescript": "^5.4.5"
   },
   "author": "Anton Medvedev <anton@medv.io>",
   "license": "MIT",
