@@ -1,4 +1,4 @@
-ARG node=18
+ARG node=20
 FROM node:${node}-alpine AS webpod
 RUN apk add \
     openssh-client

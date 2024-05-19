@@ -1,7 +1,4 @@
-import {Response} from "../src/ssh.js"
-
-export {suite} from 'uvu'
-export * as assert from 'uvu/assert'
+import { Response } from '../src/ssh.js'
 
 // wrap wraps a test function to catch Response errors,
 // otherwise uvu will not catch them and skip the test.
