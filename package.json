@@ -1,5 +1,5 @@
 {
-  "name": "webpod",
+  "name": "@yuanyeyuanye/webpod",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/src/index.js",
@@ -22,7 +22,8 @@
     "inquirer": "^9.2.22",
     "minimist": "^1.2.8",
     "node-fetch-native": "^1.6.4",
-    "open": "^9.1.0"
+    "open": "^9.1.0",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
@@ -35,7 +36,7 @@
   "license": "MIT",
   "homepage": "https://webpod.dev",
   "description": "Self-hosted sites",
-  "repository": "webpod/webpod",
+  "repository": "yuanyeyuanye/webpod",
   "keywords": [
     "self-hosted"
   ]

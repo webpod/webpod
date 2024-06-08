@@ -3,3 +3,4 @@ node_modules/
 coverage/
 yarn.lock
 src/playground.ts
+src/exp.ts

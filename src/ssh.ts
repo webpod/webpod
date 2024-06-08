@@ -1,10 +1,9 @@
-import {spawn, spawnSync} from 'node:child_process'
-import process from 'node:process'
-import {createGzip} from 'node:zlib'
-import fs from 'node:fs'
-import {addr, controlPath, escapeshellarg} from './utils.js'
 import chalk from 'chalk'
-import {progressMessage} from './spinner.js'
+import { spawn, spawnSync, StdioPipe, StdioPipeNamed } from 'node:child_process'
+import process from 'node:process'
+import { Readable } from 'node:stream'
+import { progressMessage } from './spinner.js'
+import { addr, controlPath, escapeshellarg } from './utils.js'
 
 type Values = (string | string[] | Promise<string> | Promise<string[]>)[]
 
@@ -28,8 +27,26 @@ export type SshConfig = {
   multiplexing: boolean
   verbose: boolean
   become?: string
+  input?: string | Buffer | Readable
+  stdio: StdioPipeNamed | StdioPipe[]
   env: Record<string, string>
   ssh: SshOptions
+}
+
+function parseInput(input?: string | Buffer | Readable): Readable | undefined {
+  if (input instanceof Buffer) {
+    return Readable.from(input)
+  } 
+  
+  if (typeof input === "string") {
+    return Readable.from(Buffer.from(input))
+  } 
+  
+  if (input instanceof Readable) {
+    return input
+  } 
+  
+  return undefined
 }
 
 export function ssh(partial: Partial<SshConfig>): RemoteShell {
@@ -44,6 +61,8 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
     multiplexing: partial.multiplexing ?? true,
     verbose: partial.verbose ?? false,
     become: partial.become,
+    input: partial.input,
+    stdio: partial.stdio ?? ['pipe', 'pipe', 'pipe'],
     env: partial.env ?? {},
     ssh: partial.ssh ?? {},
   }
@@ -61,12 +80,12 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
 
     const args = sshArgs(config)
     const id = 'id$' + Math.random().toString(36).slice(2)
-    args.push(
-      `: ${id}; ` +
-      (config.become ? `sudo -H -u ${escapeshellarg(config.become)} ` : '') +
-      env(config.env) +
-      config.shell
-    )
+    // args.push(
+    //   `: ${id}; ` +
+    //   (config.become ? `sudo -H -u ${escapeshellarg(config.become)} ` : '') +
+    //   env(config.env) +
+    //   config.shell
+    // )
 
     const cmd = await composeCmd(pieces, values)
     const cmdFull = config.prefix + workingDir(config.cwd) + cmd
@@ -79,8 +98,9 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
       console.error(`${chalk.green.bold(`${config.become ?? config.remoteUser}@${config.hostname}`)}${chalk.magenta.bold(`:${config.cwd ?? ''}`)}${chalk.bold.blue(`$`)} ${chalk.bold(cmd)}`)
     }
 
-    const child = spawn('ssh', args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
+    // console.log(`args: ${args.join(' ')}`)
+    const child = spawn('ssh', [...args, cmdFull], {
+      stdio: config.stdio,
       windowsHide: true,
     })
     let stdout = '', stderr = ''
@@ -108,8 +128,15 @@ export function ssh(partial: Partial<SshConfig>): RemoteShell {
       reject(new Response(cmd, location, null, stdout, stderr, err))
     })
 
-    child.stdin.write(cmdFull)
-    child.stdin.end()
+    const inputReadable = parseInput(config.input);
+    if (inputReadable) {
+      inputReadable.pipe(child.stdin);
+    } else {
+      child.stdin.end()
+    }
+    // console.log(`cmdFull: ${cmdFull}`);
+    // child.stdin.end()
+    // child.stdin.write(cmdFull)
 
     return promise
   } as RemoteShell
