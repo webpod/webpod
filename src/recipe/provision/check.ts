@@ -11,8 +11,8 @@ task('provision:check', async ({host, $}) => {
 
   const version = (await $`cat /etc/os-release | grep VERSION_ID`)
     .split('=')[1].replace(/"/g, '')
-  if (![20, 22, 23].includes(parseInt(version))) {
-    throw new StopError('Ubuntu version must be 20 or 22')
+  if (![20, 22, 23, 24].includes(parseInt(version))) {
+    throw new StopError('Ubuntu version must be in the set 20, 22, 24')
   }
 
   if (await $.test`systemctl is-active nginx`) {
