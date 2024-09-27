@@ -19,17 +19,17 @@
   "dependencies": {
     "chalk": "^5.3.0",
     "indent-string": "^5.0.0",
-    "inquirer": "^9.2.22",
+    "inquirer": "^9.2.23",
     "minimist": "^1.2.8",
     "node-fetch-native": "^1.6.4",
-    "open": "^9.1.0"
+    "open": "^10.1.0"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^20.12.12",
-    "c8": "^9.1.0",
-    "typescript": "^5.4.5"
+    "@types/node": "^22.7.4",
+    "c8": "^10.1.2",
+    "typescript": "^5.6.2"
   },
   "author": "Anton Medvedev <anton@medv.io>",
   "license": "MIT",
