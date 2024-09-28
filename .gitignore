@@ -3,3 +3,11 @@ node_modules/
 coverage/
 yarn.lock
 src/playground.ts
+
+# Credentials
+**/*.asc
+**/*.key
+**/*.pem
+**/*.cert
+**/.npmrc
+**/.yarnrc
