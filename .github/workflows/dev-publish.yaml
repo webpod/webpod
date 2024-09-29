@@ -19,7 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
 
       - name: install
         run: npm i
@@ -29,8 +28,8 @@ jobs:
 
       - name: publish
         run: |
-          echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" >> .npmrc
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN\nregistry=https://registry.npmjs.org/" >> .npmrc
           npm version $(node --eval="process.stdout.write(require('./package.json').version)")-dev.$(git rev-parse --short HEAD) --no-git-tag-version
-          npm publish --userconfig ./.npmrc --provenance --access=public --no-git-tag-version --tag dev
+          npm publish --userconfig ./.npmrc --provenance --access public --no-git-tag-version --tag dev
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
