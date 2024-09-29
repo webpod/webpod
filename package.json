@@ -35,8 +35,12 @@
   "license": "MIT",
   "homepage": "https://webpod.dev",
   "description": "Self-hosted sites",
-  "repository": "webpod/webpod",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webpod/webpod.git"
+  },
   "keywords": [
+    "webpod",
     "self-hosted"
   ]
 }
